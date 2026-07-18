@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// agentharness — drops a minimal Claude Code harness into the current directory.
+// theagentharness — drops a minimal Claude Code harness into the current directory.
 // No prompts, no network, no dependencies. Existing files are skipped; --force overwrites.
 
 import { copyFileSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 const args = process.argv.slice(2);
 
 if (args.includes('--help') || args.includes('-h')) {
-  console.log(`Usage: npx agentharness [--force]
+  console.log(`Usage: npx theagentharness [--force]
 
 Copies a minimal Claude Code harness into the current directory:
 CLAUDE.md, AGENTS.md, docs/agent-checklist.md, .claude/ (skills, explorer
