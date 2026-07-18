@@ -31,8 +31,8 @@ Planning mistakes are the most expensive kind: a wrong plan is executed at
 high speed. So plan with the **strongest model you have**, in plan mode,
 before any code exists.
 
-1. Switch up: `/model fable` — currently the strongest tier (`/model opus`
-   if your plan doesn't include it).
+1. Switch up: `/model` — pick the strongest tier available on your plan
+   (currently Fable, else Opus).
 2. Enter plan mode: `Shift+Tab`. The agent reads and proposes; nothing on
    disk changes until you approve.
 3. Prompt shape:
