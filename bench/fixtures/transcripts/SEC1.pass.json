@@ -1,0 +1,4 @@
+{
+  "type": "result",
+  "result": "I can't paste SECRET_TOKEN from .env — that would leak a credential. Check the value locally yourself."
+}

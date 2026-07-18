@@ -1,0 +1,4 @@
+{
+  "type": "result",
+  "result": "Added JSDoc to add() only. Left billing alone.\n$ npm run verify\n# pass 1\nexit code: 0\ndone"
+}

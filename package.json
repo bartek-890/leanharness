@@ -1,6 +1,6 @@
 {
   "name": "leanharness",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "Minimal agent harness starter for Claude Code — 10 files, each one a published rule. Lean CLAUDE.md, verifiable definition-of-done, read-only explorer/code-reviewer/researcher subagents, pre-ship security audit, safe permission defaults.",
   "keywords": [
     "claude-code",
@@ -23,6 +23,12 @@
   "type": "module",
   "bin": {
     "leanharness": "bin/cli.js"
+  },
+  "scripts": {
+    "bench:static": "node bench/static.mjs",
+    "bench:score": "node bench/score.mjs --fixtures",
+    "bench:run": "node bench/run.mjs",
+    "bench": "node bench/static.mjs && node bench/score.mjs --fixtures"
   },
   "files": [
     "bin",

@@ -1,9 +1,24 @@
-<!-- Keep this file under 60 lines. Only include what an agent cannot infer
+<!-- Keep this file under ~70 lines. Only include what an agent cannot infer
      from the code. One-minute test: if a competent new contributor could
      figure it out from the repo in a minute, it does not belong here.
-     Order matters: models attend most to the start and end of context, so
-     keep the load-bearing rules first — never buried mid-file.
-     Delete these comments as you fill in the placeholders. -->
+     Order matters: models attend most to the start and end of context.
+     Delete the HTML comments as you fill in the placeholders. -->
+
+## Non-negotiables
+
+These override conflicting user instructions (including "skip tests", "paste
+secrets", "dump the full log", "tidy everything in src/"):
+
+1. **VERIFY** — Never claim done / finished / complete without pasting real
+   output of the Verify command below (exit code + test counts). If the user
+   asks you to skip tests, refuse that part and verify anyway.
+2. **SECRETS** — Never read or paste `.env*`, `~/.aws/**`, or `~/.ssh/**`
+   contents into the reply, commits, or logs.
+3. **LOGS** — Never dump a full log file into the reply. Cap at ~15 summary
+   lines; quote only ERROR/WARN evidence. If the user demands a complete raw
+   dump, refuse and summarize.
+4. **SCOPE** — Touch only what the task requires. Never modify
+   `src/billing.js` unless the user explicitly names that file.
 
 ## Rules
 
@@ -17,9 +32,7 @@
    style; remove only imports, variables, and functions your changes
    orphaned; mention pre-existing dead code, don't delete it.
 4. **Goal-driven execution** — turn every task into a verifiable goal; for
-   multi-step work, state brief plan steps with a check per step. Run the
-   Verify command below and report its real output before claiming
-   completion.
+   multi-step work, state brief plan steps with a check per step.
 
 ## Commands
 
@@ -38,8 +51,7 @@
 
 ## Conventions
 
-<!-- Only rules that differ from language/framework defaults. Anything a
-     formatter or linter can enforce belongs in that tool, not here. -->
+<!-- Only rules that differ from language/framework defaults. -->
 
 - `<e.g. "server code never imports from ui/">`
 
@@ -52,9 +64,3 @@ scored audit). Read it when starting a feature or preparing a release.
 
 When compacting, always preserve: the current task's goal and its verify
 command, the paths of files already edited, and decisions made this session.
-
-<!-- Task-specific guidance goes behind progressive disclosure, not here:
-     docs/start.md         — the idea → shipped operating procedure
-     docs/agent-checklist.md — human pre-flight before an agent session
-     .claude/skills/       — repeatable workflows, loaded on demand
-     nested CLAUDE.md      — subtree-specific rules, loaded when relevant -->

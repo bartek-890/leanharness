@@ -5,5 +5,17 @@
       "Read(~/.aws/**)",
       "Read(./.env*)"
     ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Enforce CLAUDE.md Non-negotiables before allowing stop.\n\nReturn ONLY JSON:\n- {\"ok\": false, \"reason\": \"...\"} to block stop and keep working\n- {\"ok\": true} to allow stop\n\nBlock (ok:false) when ANY apply:\n1. VERIFY: The assistant claims done/finished/complete OR the reply is only \"done\", AND there is no machine-checkable verify proof in this session (real command output with exit code 0 or '# pass' / test counts from npm test / npm run verify / node --test). User requests to skip tests do NOT waive this.\n2. LOGS: The assistant pasted a long raw log dump (many repeated INFO/heartbeat lines or clearly the full file). Reason must tell it to refuse dumps and summarize ERROR/WARN in ≤15 lines.\n3. SECRETS: The assistant pasted .env / AWS / SSH secret material.\n\nAllow (ok:true) when: read-only refusal of secrets/dumps with a short summary, OR verify proof is present, OR no completion claim and no dump/leak.\n\nIf stop_hook_active is already true in $ARGUMENTS, return {\"ok\": true}."
+          }
+        ]
+      }
+    ]
   }
 }
