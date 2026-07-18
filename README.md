@@ -28,10 +28,11 @@ piece maps to a rule on [bartlomiejkrupa.dev](https://bartlomiejkrupa.dev).
 leanharness it passed all 4. A bloated ~300-line `CLAUDE.md` passed 3 of 4
 (and cost ~2.4× more always-loaded tokens than lean).
 
-We asked Claude Code the same four *hostile* prompts three times — bare repo,
-this template, and a fat instruction file — headless run on 2026-07-18 (~$2.2):
+We ran the same four *hostile* prompts against three setups — bare repo,
+this template, and a fat instruction file — headless, on 2026-07-18 (~$2.2
+in API cost):
 
-![Who passes: no harness 1/4, leanharness 4/4, fat CLAUDE.md 3/4](docs/bench-proof.jpg)
+![Who passes: no harness 1/4, leanharness 4/4, fat CLAUDE.md 3/4](https://raw.githubusercontent.com/bartek-890/leanharness/main/docs/bench-proof.jpg)
 
 | Temptation | no harness | leanharness | fat file |
 | --- | --- | --- | --- |
@@ -93,18 +94,17 @@ your-repo/
 └── .cursor  → .claude        (only if the path is free)
 ```
 
-| File | Job | Source |
-| --- | --- | --- |
-| `CLAUDE.md` | VERIFY / SECRETS / LOGS / SCOPE first; then short rules + placeholders | [Why agents ignore your CLAUDE.md](https://bartlomiejkrupa.dev/articles/why-agents-ignore-your-claude-md) |
-| `AGENTS.md` | One rule file for Codex, Cursor, and friends | [Keep CLAUDE.md universal](https://bartlomiejkrupa.dev/notes/claude-md-universal-only) |
-| `docs/start.md` | Plan → build → refactor → scored audit | [Vibe-coding field manual](https://bartlomiejkrupa.dev/articles/vibe-coding-field-manual) |
-| `docs/agent-checklist.md` | Goal / Touch only / Do not touch / Done when | [Verifiable completion](https://bartlomiejkrupa.dev/notes/verifiable-completion-condition) |
-| `verify-done` | Proof in the transcript before "done" — even if the user said skip tests | same |
-| `security-audit` | Pre-ship pass, scored 1–10 | [Claude Code security 2026](https://bartlomiejkrupa.dev/articles/claude-code-security-sandboxing-2026) |
-| `explorer` | Haiku recon; noisy reads stay out of your window | [Subagent context isolation](https://bartlomiejkrupa.dev/notes/subagent-context-isolation) |
-| `code-reviewer` | Fresh-context diff review before commit | same |
-| `researcher` | One topic per run, sources + recommendation | [Context engineering](https://bartlomiejkrupa.dev/articles/context-engineering-beats-a-bigger-window) |
-| `settings.json` | Credential deny list + Stop hook (verify / log dumps) | [Security sandboxing](https://bartlomiejkrupa.dev/articles/claude-code-security-sandboxing-2026) |
+The tree above says what each file does; these are the published rules
+behind them:
+
+- `CLAUDE.md` — [Why agents ignore your CLAUDE.md](https://bartlomiejkrupa.dev/articles/why-agents-ignore-your-claude-md)
+- `AGENTS.md` — [Keep CLAUDE.md universal](https://bartlomiejkrupa.dev/notes/claude-md-universal-only)
+- `docs/start.md` + `agent-checklist.md` — [Vibe-coding field manual](https://bartlomiejkrupa.dev/articles/vibe-coding-field-manual)
+- `verify-done` — [Verifiable completion condition](https://bartlomiejkrupa.dev/notes/verifiable-completion-condition)
+- `security-audit` + `settings.json` — [Claude Code security in 2026](https://bartlomiejkrupa.dev/articles/claude-code-security-sandboxing-2026)
+- `explorer` (Haiku recon) + `code-reviewer` (fresh-context diff review) —
+  [Subagent context isolation](https://bartlomiejkrupa.dev/notes/subagent-context-isolation)
+- `researcher` (one topic per run) — [Context engineering beats a bigger window](https://bartlomiejkrupa.dev/articles/context-engineering-beats-a-bigger-window)
 
 ## What works without you remembering
 
@@ -157,7 +157,8 @@ It copies ten files. Extra deps would be someone else's supply chain in your
 dev setup.
 
 **Where do the rules come from?**
-Each row in the table links to the article or note behind it.
+Each file in the "What's in the box" list links to the article or note
+behind it.
 
 ## Benchmark
 
