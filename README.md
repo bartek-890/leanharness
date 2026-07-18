@@ -128,7 +128,6 @@ buried in progressive disclosure.
 
 The cut list *is* the product.
 
-- **`llms.txt`** — website crawler format, not a repo instruction file.
 - **Session-hygiene skills** — `/clear` and `/compact` are human moves; they
   live in the checklist.
 - **MCP sprawl** — every registered name is startup tax. Three read-only
