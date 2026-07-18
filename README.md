@@ -1,27 +1,70 @@
 # leanharness
 
-Minimal agent harness starter for [Claude Code](https://claude.com/claude-code).
-One command, ten files, zero dependencies, zero lock-in.
+> The minimal [Claude Code](https://claude.com/claude-code) harness that respects your context window.
+
+[![npm version](https://img.shields.io/npm/v/leanharness)](https://www.npmjs.com/package/leanharness)
+[![node](https://img.shields.io/node/v/leanharness)](https://github.com/bartek-890/leanharness/blob/main/package.json)
+![dependencies](https://img.shields.io/badge/dependencies-0-brightgreen)
+[![license](https://img.shields.io/npm/l/leanharness)](./LICENSE)
+
+**One command. Ten files. Zero dependencies. Zero lock-in.**
+
+An agent is ~10% model and ~90% harness — and the always-loaded part of that
+harness is the expensive part. `CLAUDE.md` is read into context at the start
+of **every** session and competes with your actual task for attention:
+frontier models hold reliable adherence to roughly 150–200 instructions, and
+Claude Code's own system prompt spends about 50 of them before your file is
+read. A bloated rule file doesn't make an agent obedient — it makes the whole
+file get discounted as noise.
+
+leanharness ships only what changes agent behavior mechanically. Every file
+maps to a rule published — with sources and numbers — on
+[bartlomiejkrupa.dev](https://bartlomiejkrupa.dev).
+
+## Quick start
 
 ```bash
 npx leanharness
 ```
 
-Existing files are never touched — rerun with `--force` to overwrite. After
-installing, fill in the placeholders in `CLAUDE.md` (Commands, Architecture,
-Conventions) and delete the guidance comments.
+```text
+  created   .claude/agents/code-reviewer.md
+  created   .claude/agents/explorer.md
+  created   .claude/agents/researcher.md
+  created   .claude/settings.json
+  created   .claude/skills/add-skill/SKILL.md
+  created   .claude/skills/security-audit/SKILL.md
+  created   .claude/skills/verify-done/SKILL.md
+  created   AGENTS.md
+  created   CLAUDE.md
+  created   docs/agent-checklist.md
 
-## Why so small
+Next: fill in the placeholders in CLAUDE.md (Commands, Architecture, Conventions).
+```
 
-An agent is ~10% model and ~90% harness — and the always-loaded part of that
-harness is the expensive part. `CLAUDE.md` is read into context at the start
-of **every** session and competes with your actual task for attention, so a
-bloated rule file doesn't make an agent obedient; it makes the whole file get
-discounted as noise. This starter ships only what changes agent behavior
-mechanically, and every file maps to a rule published (with sources and
-numbers) on [bartlomiejkrupa.dev](https://bartlomiejkrupa.dev).
+Existing files are **never touched** — rerun with `--force` to overwrite.
+Then fill in the three placeholder sections in `CLAUDE.md` and delete the
+guidance comments. Two minutes, total.
 
-## What you get
+## What's inside
+
+```text
+your-repo/
+├── CLAUDE.md                    ~50-line rule skeleton — fill in 3 sections
+├── AGENTS.md                    points Codex, Cursor & co. at CLAUDE.md
+├── docs/
+│   └── agent-checklist.md       human pre-flight + debug escalation ladder
+└── .claude/
+    ├── settings.json            credential deny rules (~/.ssh, ~/.aws, .env*)
+    ├── agents/
+    │   ├── explorer.md          read-only recon on Haiku — summary only
+    │   ├── code-reviewer.md     fresh-context diff review before commit
+    │   └── researcher.md        one topic per run, sources, recommendation
+    └── skills/
+        ├── verify-done/         proof in the transcript before "done"
+        ├── add-skill/           the harness extends itself
+        └── security-audit/      pre-ship security pass
+```
 
 | File | What it does | The rule behind it |
 | --- | --- | --- |
@@ -36,7 +79,23 @@ numbers) on [bartlomiejkrupa.dev](https://bartlomiejkrupa.dev).
 | `.claude/agents/researcher.md` | One self-contained topic per run — docs, APIs, approach comparisons — researched outside your window, summary back | [Subagent context isolation](https://bartlomiejkrupa.dev/notes/subagent-context-isolation), [Context engineering beats a bigger window](https://bartlomiejkrupa.dev/articles/context-engineering-beats-a-bigger-window) |
 | `.claude/settings.json` | Denies agent reads of `~/.ssh`, `~/.aws`, and `.env*` — there is no built-in credential deny list | [Claude Code security in 2026](https://bartlomiejkrupa.dev/articles/claude-code-security-sandboxing-2026) |
 
+## Three files work even if you forget they exist
+
+Most harness advice requires discipline. Three of these files don't:
+
+1. **`settings.json`** — Claude Code has no built-in credential deny list;
+   by default the agent can read `~/.ssh` and `~/.aws/credentials`. The
+   installed deny rules close that from the first session.
+2. **`explorer.md`** — heavy reads (logs, multi-file surveys, test triage)
+   run in a subagent's own context window on Haiku, the cheapest capable
+   tier, and return a ~30-line summary. Your window stays clean.
+3. **`verify-done`** — triggers when the agent is about to say "done" and
+   demands proof in the transcript: a named check, its real exit code, an
+   honest report if it fails. "Mostly working" stops being a final answer.
+
 ## What's deliberately NOT here
+
+The cut list is the product:
 
 - **`llms.txt`** — a spec for websites, not repositories. In a repo it would
   duplicate `CLAUDE.md`.
@@ -47,12 +106,27 @@ numbers) on [bartlomiejkrupa.dev](https://bartlomiejkrupa.dev).
   jobs (recon, review, research); add more via `/add-skill` only when a
   workflow actually repeats.
 
-## Other tools
+## Beyond Claude Code
 
 Claude Code reads `CLAUDE.md`, `.claude/skills/`, `.claude/agents/`, and
 `.claude/settings.json` natively. Tools that read `AGENTS.md` (Codex, Cursor,
-and others) are pointed at `CLAUDE.md` by it — keep the rules in one file.
+and others) are pointed at `CLAUDE.md` by it — the rules live in one file,
+not two drifting copies.
+
+## FAQ
+
+**Is it safe to run in an existing repo?**
+Yes. Files that already exist are skipped and listed; overwriting requires
+an explicit `--force`. No prompts, no postinstall, no network calls.
+
+**Why does the CLI have zero dependencies?**
+It copies ten files. Anything more would be someone else's supply chain in
+your dev setup.
+
+**Where do the rules come from?**
+Each file's row in the table above links to the published article or note it
+implements, with sources and numbers.
 
 ## License
 
-MIT
+[MIT](./LICENSE)
