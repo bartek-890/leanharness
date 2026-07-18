@@ -59,7 +59,7 @@ guidance comments. Two minutes, total.
 
 ```text
 your-repo/
-├── CLAUDE.md                    ~50-line rule skeleton — fill in 3 sections
+├── CLAUDE.md                    ~60-line rule skeleton — fill in 3 sections
 ├── AGENTS.md                    points Codex, Cursor & co. at CLAUDE.md
 ├── docs/
 │   ├── start.md                 idea → shipped operating procedure
@@ -79,7 +79,7 @@ your-repo/
 
 | File | What it does | The rule behind it |
 | --- | --- | --- |
-| `CLAUDE.md` | ~50-line skeleton: 4 behavioral rules, placeholders for non-guessable commands, architecture, non-default conventions, a Compact Instructions block | [Why agents ignore your CLAUDE.md](https://bartlomiejkrupa.dev/articles/why-agents-ignore-your-claude-md), [Keep CLAUDE.md universal](https://bartlomiejkrupa.dev/notes/claude-md-universal-only) |
+| `CLAUDE.md` | ~60-line skeleton: 4 behavioral rules, placeholders for non-guessable commands, architecture, non-default conventions, a Compact Instructions block | [Why agents ignore your CLAUDE.md](https://bartlomiejkrupa.dev/articles/why-agents-ignore-your-claude-md), [Keep CLAUDE.md universal](https://bartlomiejkrupa.dev/notes/claude-md-universal-only) |
 | `AGENTS.md` | Points every non-Claude tool at `CLAUDE.md` — one source of truth | [Why agents ignore your CLAUDE.md](https://bartlomiejkrupa.dev/articles/why-agents-ignore-your-claude-md) |
 | `docs/start.md` | The operating procedure: plan with the strongest model, build one feature per session, refactor on a schedule, audit scored 1–10 with a fix loop, model-per-task table, command hints (`/goal`, `/loop`, plan mode) | [The vibe-coding field manual](https://bartlomiejkrupa.dev/articles/vibe-coding-field-manual), [Why most agents default to the wrong Claude tier](https://bartlomiejkrupa.dev/articles/claude-model-tier-comparison) |
 | `docs/agent-checklist.md` | Human pre-flight and recovery: scoped-prompt template (Goal / Touch only / Do not touch / Done when), session hygiene, closing the loop, the debug escalation ladder | [The vibe-coding field manual](https://bartlomiejkrupa.dev/articles/vibe-coding-field-manual), [Verifiable completion condition](https://bartlomiejkrupa.dev/notes/verifiable-completion-condition) |
@@ -125,9 +125,11 @@ Claude Code reads `CLAUDE.md`, `.claude/skills/`, `.claude/agents/`, and
 - **`AGENTS.md`** points tools that read it (Codex, Cursor, and others) at
   `CLAUDE.md` — the rules live in one file, not two drifting copies.
 - **`.agents` and `.cursor` symlinks** mirror `.claude`, so tools that look
-  for those folders find the same skills and agents. The installer never
-  replaces an existing folder — if you already have a real `.cursor/`, the
-  link is skipped and your files stay untouched.
+  for those folders find the same skills and agents. Visible is not
+  executable: subagents, skills, and `settings.json` permission rules only
+  run in Claude Code. The installer never replaces an existing folder — if
+  you already have a real `.cursor/`, the link is skipped and your files
+  stay untouched.
 
 ## FAQ
 
