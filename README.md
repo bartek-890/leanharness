@@ -55,7 +55,7 @@ npx leanharness
 ```
 
 ```text
-leanharness v0.5.0 — a lean Claude Code harness in 10 files
+leanharness v0.5.1 — a lean Claude Code harness in 10 files
 
   + created   AGENTS.md
   + created   CLAUDE.md
