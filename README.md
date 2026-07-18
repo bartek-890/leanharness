@@ -28,18 +28,25 @@ npx leanharness
 ```
 
 ```text
-  created   .claude/agents/code-reviewer.md
-  created   .claude/agents/explorer.md
-  created   .claude/agents/researcher.md
-  created   .claude/settings.json
-  created   .claude/skills/add-skill/SKILL.md
-  created   .claude/skills/security-audit/SKILL.md
-  created   .claude/skills/verify-done/SKILL.md
-  created   AGENTS.md
-  created   CLAUDE.md
-  created   docs/agent-checklist.md
+leanharness v0.3.0 — a lean Claude Code harness in 10 files
 
-Next: fill in the placeholders in CLAUDE.md (Commands, Architecture, Conventions).
+  + created   AGENTS.md
+  + created   CLAUDE.md
+  + created   .claude/settings.json
+  + created   docs/agent-checklist.md
+  + created   .claude/agents/code-reviewer.md
+  + created   .claude/agents/explorer.md
+  + created   .claude/agents/researcher.md
+  + created   .claude/skills/add-skill/SKILL.md
+  + created   .claude/skills/security-audit/SKILL.md
+  + created   .claude/skills/verify-done/SKILL.md
+
+  10 created
+
+  Next steps
+  1. Fill in the placeholders in CLAUDE.md — Commands, Architecture, Conventions
+  2. Delete the guidance comments as you go
+  3. Start Claude Code — the harness loads at session start
 ```
 
 Existing files are **never touched** — rerun with `--force` to overwrite.
