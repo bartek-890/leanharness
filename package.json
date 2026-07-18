@@ -1,5 +1,5 @@
 {
-  "name": "theagentharness",
+  "name": "leanharness",
   "version": "0.1.0",
   "description": "Minimal agent harness starter for Claude Code — 7 files, each one a published rule. Lean CLAUDE.md, verifiable definition-of-done, read-only explorer subagent, safe permission defaults.",
   "keywords": [
@@ -14,15 +14,15 @@
   ],
   "license": "MIT",
   "author": "Bartłomiej Krupa (https://bartlomiejkrupa.dev)",
-  "homepage": "https://github.com/bartek-890/theagentharness#readme",
+  "homepage": "https://github.com/bartek-890/leanharness#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/bartek-890/theagentharness.git"
+    "url": "git+https://github.com/bartek-890/leanharness.git"
   },
-  "bugs": "https://github.com/bartek-890/theagentharness/issues",
+  "bugs": "https://github.com/bartek-890/leanharness/issues",
   "type": "module",
   "bin": {
-    "theagentharness": "bin/cli.js"
+    "leanharness": "bin/cli.js"
   },
   "files": [
     "bin",

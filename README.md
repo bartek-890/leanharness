@@ -1,10 +1,10 @@
-# theagentharness
+# leanharness
 
 Minimal agent harness starter for [Claude Code](https://claude.com/claude-code).
 One command, seven files, zero dependencies, zero lock-in.
 
 ```bash
-npx theagentharness
+npx leanharness
 ```
 
 Existing files are never touched — rerun with `--force` to overwrite. After
