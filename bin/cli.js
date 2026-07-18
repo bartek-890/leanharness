@@ -2,7 +2,15 @@
 // leanharness — drops a minimal Claude Code harness into the current directory.
 // No prompts, no network, no dependencies. Existing files are skipped; --force overwrites.
 
-import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync } from 'node:fs';
+import {
+  copyFileSync,
+  existsSync,
+  lstatSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  symlinkSync,
+} from 'node:fs';
 import { dirname, join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -85,12 +93,38 @@ for (const { src, rel } of files) {
   }
 }
 
+// Mirror .claude as .agents and .cursor so tools that look for those
+// folders see the same harness. Existing paths are never touched.
+let linked = 0;
+for (const name of ['.agents', '.cursor']) {
+  const linkPath = join(targetDir, name);
+  let exists = true;
+  try {
+    lstatSync(linkPath);
+  } catch {
+    exists = false;
+  }
+  if (exists) {
+    skipped++;
+    console.log(`  ${dim(`· skipped   ${name} (exists)`)}`);
+    continue;
+  }
+  try {
+    symlinkSync('.claude', linkPath, 'junction');
+    linked++;
+    console.log(`  ${green('+ linked')}    ${name} ${dim('→ .claude')}`);
+  } catch {
+    console.log(`  ${dim(`· no link   ${name} (symlinks unavailable — AGENTS.md still bridges other tools)`)}`);
+  }
+}
+
 const summary = [`${created} created`];
+if (linked) summary.push(`${linked} linked`);
 if (replaced) summary.push(`${replaced} replaced`);
 if (skipped) summary.push(`${skipped} skipped`);
 console.log(`\n  ${dim(summary.join(' · '))}`);
 
-if (created === 0 && replaced === 0) {
+if (created === 0 && replaced === 0 && linked === 0) {
   console.log(`
   Nothing to do — every harness file already exists.
   Rerun with ${bold('--force')} to overwrite.
@@ -99,7 +133,7 @@ if (created === 0 && replaced === 0) {
   console.log(`
   ${bold('Next steps')}
   ${dim('1.')} Fill in the placeholders in CLAUDE.md — Commands, Architecture, Conventions
-  ${dim('2.')} Delete the guidance comments as you go
+  ${dim('2.')} Open docs/start.md — the idea → shipped operating procedure
   ${dim('3.')} Start Claude Code — the harness loads at session start
 `);
   if (skipped) {

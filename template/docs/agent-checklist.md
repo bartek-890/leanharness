@@ -1,7 +1,9 @@
 # Agent pre-flight checklist
 
 Run through this before starting an agent session. It takes a minute and is
-the difference between a session that converges and one that wanders.
+the difference between a session that converges and one that wanders. (This
+is the per-session pre-flight; the full idea → shipped procedure lives in
+[start.md](./start.md).)
 
 ## 1. Scope the task
 
@@ -34,7 +36,9 @@ Write the prompt in four lines:
 - For unattended runs, hand the **Done when** line to `/goal` — the session
   keeps working until a separate evaluator confirms the condition from the
   transcript, so the proof must land there.
-- Same instructions pasted three times? Codify them as a skill (`/add-skill`).
+- Same instructions pasted three times? Codify them as a skill:
+  `.claude/skills/<name>/SKILL.md` — copy the frontmatter shape of
+  `verify-done`, and make the description say *when* to use it.
 
 ## 4. When it breaks
 

@@ -34,6 +34,11 @@ A prioritized list of findings, each on the pattern:
 - `[blocker|warning|nit]` `path:line` — issue in 1–3 sentences + a concrete
   suggested fix (a snippet of a few lines max, never a rewritten file)
 
-Order: blockers, then warnings, then nits. End with a one-line verdict
-(`OK to merge` / `needs fixes: N blockers`). If there are no findings, say
-so explicitly. Keep the whole response under ~60 lines.
+Order: blockers, then warnings, then nits. If there are no findings, say so
+explicitly. Keep the whole response under ~60 lines.
+
+End with a verdict line: `Score: N/10 — OK to merge` or
+`Score: N/10 — needs fixes: N blockers`. Scoring: 9–10 clean or nits only;
+7–8 warnings, no blockers; 5–6 at least one blocker; ≤4 multiple blockers.
+The score must follow from the findings listed above it — the main session
+applies fixes and re-invokes you for the next round.

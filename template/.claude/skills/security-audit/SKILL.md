@@ -27,11 +27,25 @@ than anyone admits.
    `pip-audit`, `cargo audit`, …) and report its real output.
 6. **Report.** Findings ranked by severity, each with a `path:line`
    reference and a concrete fix. State explicitly when a check class did
-   not apply (e.g. no network surface).
+   not apply (e.g. no network surface). End with `Score: N/10`:
+
+   | Score | Meaning |
+   | --- | --- |
+   | 9–10 | No findings, or nits only |
+   | 7–8 | Warnings, no blockers |
+   | 5–6 | At least one blocker |
+   | ≤4 | Multiple blockers or secrets exposed |
+
+7. **Fix loop.** Below 8/10 (below 9/10 when real user data is involved):
+   apply the fixes — blockers first — then re-run the audit from step 2.
+   Cap at 3 rounds; after that, the remaining findings are a human
+   decision. Never raise the score without the finding actually fixed.
 
 ## Constraints
 
 - Every finding needs evidence (`path:line`, command output) — no
   speculative findings without a concrete location.
+- The score must be justified by the listed findings — a bare number is
+  worthless.
 - This is a first pass, not a substitute for deterministic SAST/DAST in CI.
   Say so in the report when the stakes warrant it.

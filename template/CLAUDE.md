@@ -43,12 +43,18 @@
 
 - `<e.g. "server code never imports from ui/">`
 
+## Process
+
+`docs/start.md` is the operating procedure (plan → build → refactor →
+scored audit). Read it when starting a feature or preparing a release.
+
 ## Compact Instructions
 
 When compacting, always preserve: the current task's goal and its verify
 command, the paths of files already edited, and decisions made this session.
 
 <!-- Task-specific guidance goes behind progressive disclosure, not here:
+     docs/start.md         — the idea → shipped operating procedure
      docs/agent-checklist.md — human pre-flight before an agent session
      .claude/skills/       — repeatable workflows, loaded on demand
      nested CLAUDE.md      — subtree-specific rules, loaded when relevant -->
