@@ -59,7 +59,16 @@ leanharness v0.5.0 — a lean Claude Code harness in 10 files
   + created   AGENTS.md
   + created   CLAUDE.md
   + created   .claude/settings.json
-  …
+  + created   docs/agent-checklist.md
+  + created   docs/start.md
+  + created   .claude/agents/code-reviewer.md
+  + created   .claude/agents/explorer.md
+  + created   .claude/agents/researcher.md
+  + created   .claude/skills/security-audit/SKILL.md
+  + created   .claude/skills/verify-done/SKILL.md
+  + linked    .agents → .claude
+  + linked    .cursor → .claude
+
   10 created · 2 linked
 ```
 
