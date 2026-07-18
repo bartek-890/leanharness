@@ -28,5 +28,25 @@ Write the prompt in four lines:
 
 - Make the agent **run** the verify command. Proof belongs in the transcript
   (exit codes, test counts, clean `git status`), not in the agent's prose.
-- Review the diff before committing. Small diffs; one task, one commit.
+- Second opinion before committing: run the `code-reviewer` agent on the
+  diff — it reads the changes with no memory of how they were written.
+- Review the diff yourself too. Small diffs; one task, one commit.
+- For unattended runs, hand the **Done when** line to `/goal` — the session
+  keeps working until a separate evaluator confirms the condition from the
+  transcript, so the proof must land there.
 - Same instructions pasted three times? Codify them as a skill (`/add-skill`).
+
+## 4. When it breaks
+
+Escalate in order; each step is cheaper than the next.
+
+1. Paste the full error message verbatim — the stack trace is the context,
+   don't summarize it.
+2. Still failing? Have the agent add logs around the suspect path, rerun,
+   and paste the output.
+3. Bug returns after "fixes"? Demand a list of every possible cause before
+   the next patch — diagnosis over symptom-patching.
+4. Once the bug is understood, have the agent write the breaking test first,
+   then fix until it passes.
+5. Three failed prompts on the same problem? Stop. `/clear` and rephrase
+   from scratch — a poisoned session keeps producing poisoned answers.

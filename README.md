@@ -1,7 +1,7 @@
 # leanharness
 
 Minimal agent harness starter for [Claude Code](https://claude.com/claude-code).
-One command, seven files, zero dependencies, zero lock-in.
+One command, ten files, zero dependencies, zero lock-in.
 
 ```bash
 npx leanharness
@@ -27,10 +27,13 @@ numbers) on [bartlomiejkrupa.dev](https://bartlomiejkrupa.dev).
 | --- | --- | --- |
 | `CLAUDE.md` | ~50-line skeleton: 4 behavioral rules, placeholders for non-guessable commands, architecture, non-default conventions, a Compact Instructions block | [Why agents ignore your CLAUDE.md](https://bartlomiejkrupa.dev/articles/why-agents-ignore-your-claude-md), [Keep CLAUDE.md universal](https://bartlomiejkrupa.dev/notes/claude-md-universal-only) |
 | `AGENTS.md` | Points every non-Claude tool at `CLAUDE.md` — one source of truth | [Why agents ignore your CLAUDE.md](https://bartlomiejkrupa.dev/articles/why-agents-ignore-your-claude-md) |
-| `docs/agent-checklist.md` | Human pre-flight: scoped-prompt template (Goal / Touch only / Do not touch / Done when), session hygiene, closing the loop | [The vibe-coding field manual](https://bartlomiejkrupa.dev/articles/vibe-coding-field-manual), [Verifiable completion condition](https://bartlomiejkrupa.dev/notes/verifiable-completion-condition) |
+| `docs/agent-checklist.md` | Human pre-flight and recovery: scoped-prompt template (Goal / Touch only / Do not touch / Done when), session hygiene, closing the loop, the debug escalation ladder | [The vibe-coding field manual](https://bartlomiejkrupa.dev/articles/vibe-coding-field-manual), [Verifiable completion condition](https://bartlomiejkrupa.dev/notes/verifiable-completion-condition) |
 | `.claude/skills/verify-done/SKILL.md` | Agent must prove completion in the transcript (exit codes, clean `git status`) before saying "done" | [Verifiable completion condition](https://bartlomiejkrupa.dev/notes/verifiable-completion-condition), [The /goal evaluator only reads the transcript](https://bartlomiejkrupa.dev/notes/goal-evaluator-transcript-only) |
 | `.claude/skills/add-skill/SKILL.md` | Teaches the agent to codify recurring workflows as new skills — the harness extends itself | [Claude Code skill composition](https://bartlomiejkrupa.dev/notes/claude-code-skill-composition) |
+| `.claude/skills/security-audit/SKILL.md` | Pre-ship security pass: secrets in code and history, unprotected entry points, input validation, data exposure | [The vibe-coding field manual](https://bartlomiejkrupa.dev/articles/vibe-coding-field-manual), [Claude Code security in 2026](https://bartlomiejkrupa.dev/articles/claude-code-security-sandboxing-2026) |
 | `.claude/agents/explorer.md` | Read-only recon subagent on Haiku: verbose reads happen in its window, only a summary reaches yours | [Subagent context isolation](https://bartlomiejkrupa.dev/notes/subagent-context-isolation), [Why most agents default to the wrong Claude tier](https://bartlomiejkrupa.dev/articles/claude-model-tier-comparison) |
+| `.claude/agents/code-reviewer.md` | Fresh-context diff review before commit/PR — the reviewer never sees how the code was written, only what it says | [The vibe-coding field manual](https://bartlomiejkrupa.dev/articles/vibe-coding-field-manual), [Subagent context isolation](https://bartlomiejkrupa.dev/notes/subagent-context-isolation) |
+| `.claude/agents/researcher.md` | One self-contained topic per run — docs, APIs, approach comparisons — researched outside your window, summary back | [Subagent context isolation](https://bartlomiejkrupa.dev/notes/subagent-context-isolation), [Context engineering beats a bigger window](https://bartlomiejkrupa.dev/articles/context-engineering-beats-a-bigger-window) |
 | `.claude/settings.json` | Denies agent reads of `~/.ssh`, `~/.aws`, and `.env*` — there is no built-in credential deny list | [Claude Code security in 2026](https://bartlomiejkrupa.dev/articles/claude-code-security-sandboxing-2026) |
 
 ## What's deliberately NOT here
@@ -39,8 +42,10 @@ numbers) on [bartlomiejkrupa.dev](https://bartlomiejkrupa.dev).
   duplicate `CLAUDE.md`.
 - **Session-hygiene automation** — `/clear` and `/compact` are human moves;
   they live in the checklist, not in a file the agent loads.
-- **A pile of agents and MCP config** — every name loads at session start.
-  Start lean; add via `/add-skill` when a workflow actually repeats.
+- **MCP config and agent sprawl** — every registered name loads at session
+  start. The three shipped agents are read-only and have non-overlapping
+  jobs (recon, review, research); add more via `/add-skill` only when a
+  workflow actually repeats.
 
 ## Other tools
 

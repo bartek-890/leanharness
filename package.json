@@ -1,7 +1,7 @@
 {
   "name": "leanharness",
-  "version": "0.1.0",
-  "description": "Minimal agent harness starter for Claude Code — 7 files, each one a published rule. Lean CLAUDE.md, verifiable definition-of-done, read-only explorer subagent, safe permission defaults.",
+  "version": "0.2.0",
+  "description": "Minimal agent harness starter for Claude Code — 10 files, each one a published rule. Lean CLAUDE.md, verifiable definition-of-done, read-only explorer/code-reviewer/researcher subagents, pre-ship security audit, safe permission defaults.",
   "keywords": [
     "claude-code",
     "claude",

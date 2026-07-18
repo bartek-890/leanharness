@@ -12,8 +12,8 @@ if (args.includes('--help') || args.includes('-h')) {
   console.log(`Usage: npx leanharness [--force]
 
 Copies a minimal Claude Code harness into the current directory:
-CLAUDE.md, AGENTS.md, docs/agent-checklist.md, .claude/ (skills, explorer
-agent, permission defaults). Existing files are skipped unless --force.`);
+CLAUDE.md, AGENTS.md, docs/agent-checklist.md, .claude/ (skills, read-only
+agents, permission defaults). Existing files are skipped unless --force.`);
   process.exit(0);
 }
 
