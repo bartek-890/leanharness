@@ -31,7 +31,8 @@ Planning mistakes are the most expensive kind: a wrong plan is executed at
 high speed. So plan with the **strongest model you have**, in plan mode,
 before any code exists.
 
-1. Switch up: `/model opus` (or the strongest tier your plan allows).
+1. Switch up: `/model fable` — currently the strongest tier (`/model opus`
+   if your plan doesn't include it).
 2. Enter plan mode: `Shift+Tab`. The agent reads and proposes; nothing on
    disk changes until you approve.
 3. Prompt shape:
@@ -148,7 +149,7 @@ switch):
 
 | Task | Model | Rationale |
 | --- | --- | --- |
-| Architecture, planning, hard debugging | Strongest available (Opus tier) | Errors here compound; pay for depth once |
+| Architecture, planning, hard debugging | Strongest available (Fable, else Opus) | Errors here compound; pay for depth once |
 | Implementation, refactors, reviews | Sonnet tier | The default worker — near-top quality at a fraction of the price |
 | Recon, log reading, test triage | Haiku tier (the `explorer` agent already does this) | Cheap, fast, and the summary is all you need |
 
