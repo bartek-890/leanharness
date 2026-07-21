@@ -19,11 +19,21 @@ IDEA → PLAN (strongest model) → BUILD (loop per feature)
 
 1. `git init` before the agent touches anything — every change must be a
    commit you can revert.
-2. `npx leanharness`, then fill in the three placeholder sections in
+2. If the stack has an official scaffolding CLI (`npm create vite@latest`,
+   `npx create-next-app`, `npm create astro@latest`, `rails new`,
+   `django-admin startproject`), run it now — before any agent prompt. It
+   tracks the framework's current conventions; asking the agent to
+   hand-write the same boilerplate from memory means shipping whatever its
+   training data happened to freeze on.
+3. `npx leanharness`, then fill in the three placeholder sections in
    `CLAUDE.md` (Commands, Architecture, Conventions). Placeholders left
    unfilled = an agent guessing your test runner forever.
-3. Optional but recommended: `/sandbox` (fewer permission prompts, OS-level
+4. Optional but recommended: `/sandbox` (fewer permission prompts, OS-level
    boundaries) and `/permissions` to see what the agent may do.
+
+**Agent rule:** if asked to scaffold a new project for a stack that has an
+official generator, run the generator — don't hand-author the same config
+and boilerplate files from memory.
 
 ## Stage 1 — Plan with the strongest model
 
