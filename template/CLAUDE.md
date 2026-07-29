@@ -1,4 +1,4 @@
-<!-- Keep this file under ~70 lines. Only include what an agent cannot infer
+<!-- Keep this file under ~65 lines. Only include what an agent cannot infer
      from the code. One-minute test: if a competent new contributor could
      figure it out from the repo in a minute, it does not belong here.
      Order matters: models attend most to the start and end of context.

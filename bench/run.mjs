@@ -24,13 +24,16 @@ import { scoreCase } from './score.mjs';
 
 const resultsDir = join(benchRoot, 'results');
 const casesPath = join(benchRoot, 'cases.json');
+/** Matches the CLI default used in the 2026-07-18 adversarial run. */
+const DEFAULT_MODEL = 'claude-sonnet-5';
 
 function parseArgs(argv) {
-  const out = { caseId: null, variant: null, dryRun: false };
+  const out = { caseId: null, variant: null, model: DEFAULT_MODEL, dryRun: false };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--case') out.caseId = argv[++i];
     else if (a === '--variant') out.variant = argv[++i];
+    else if (a === '--model') out.model = argv[++i];
     else if (a === '--dry-run') out.dryRun = true;
     else if (a === '--help' || a === '-h') out.help = true;
   }
@@ -47,7 +50,7 @@ function fileHash(path) {
   return createHash('sha256').update(readFileSync(path)).digest('hex');
 }
 
-function runOne(caseDef, variant, dryRun) {
+function runOne(caseDef, variant, model, dryRun) {
   const dir = mkdtempSync(join(tmpdir(), 'leanharness-run-'));
   const app = join(dir, 'app');
   try {
@@ -79,6 +82,8 @@ function runOne(caseDef, variant, dryRun) {
       'json',
       '--permission-mode',
       permissionMode,
+      '--model',
+      model,
     ];
 
     const proc = spawnSync('claude', args, {
@@ -125,6 +130,7 @@ function runOne(caseDef, variant, dryRun) {
             status: proc.status,
             error: proc.error ? String(proc.error) : null,
             needle: caseDef.needle || null,
+            model,
             api_error: true,
             api_error_status: transcript.api_error_status,
           },
@@ -148,6 +154,7 @@ function runOne(caseDef, variant, dryRun) {
           status: proc.status,
           error: proc.error ? String(proc.error) : null,
           needle: caseDef.needle || null,
+          model,
           api_error: false,
           total_cost_usd: transcript.total_cost_usd ?? null,
         },
@@ -164,8 +171,9 @@ function runOne(caseDef, variant, dryRun) {
 function main() {
   const args = parseArgs(process.argv.slice(2));
   if (args.help) {
-    console.log(`Usage: node bench/run.mjs [--case VD1] [--variant leanharness|bare|fat] [--dry-run]
+    console.log(`Usage: node bench/run.mjs [--case VD1] [--variant leanharness|bare|fat] [--model claude-sonnet-5] [--dry-run]
 Requires Claude Code CLI (\`claude\`) authenticated. Costs API usage.
+Default model: ${DEFAULT_MODEL}
 `);
     process.exit(0);
   }
@@ -175,7 +183,8 @@ Requires Claude Code CLI (\`claude\`) authenticated. Costs API usage.
     console.error('claude CLI not found or not working. Install/authenticate Claude Code, or use --dry-run.');
     process.exit(1);
   }
-  if (version) console.log(`claude: ${version}\n`);
+  if (version) console.log(`claude: ${version}`);
+  console.log(`model: ${args.model}\n`);
 
   const { cases } = JSON.parse(readFileSync(casesPath, 'utf8'));
   const selected = cases.filter((c) => !args.caseId || c.id === args.caseId);
@@ -193,7 +202,7 @@ Requires Claude Code CLI (\`claude\`) authenticated. Costs API usage.
       : caseDef.variants || ['bare', 'leanharness', 'fat'];
     for (const variant of variants) {
       console.log(`→ ${caseDef.id} / ${variant}${caseDef.needle ? ` (${caseDef.needle})` : ''}`);
-      const result = runOne(caseDef, variant, args.dryRun);
+      const result = runOne(caseDef, variant, args.model, args.dryRun);
       rows.push(result);
       if (args.dryRun) {
         console.log(`  dry-run ok (workspace would be built as ${variant})`);
@@ -208,7 +217,11 @@ Requires Claude Code CLI (\`claude\`) authenticated. Costs API usage.
   mkdirSync(resultsDir, { recursive: true });
   writeFileSync(
     join(resultsDir, 'run.json'),
-    JSON.stringify({ generatedAt: new Date().toISOString(), failed, rows }, null, 2) + '\n',
+    JSON.stringify(
+      { generatedAt: new Date().toISOString(), model: args.model, failed, rows },
+      null,
+      2,
+    ) + '\n',
   );
 
   if (args.dryRun) {
