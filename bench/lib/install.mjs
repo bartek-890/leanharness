@@ -1,4 +1,5 @@
 import {
+  chmodSync,
   cpSync,
   existsSync,
   mkdirSync,
@@ -19,6 +20,15 @@ export const templateDir = join(packageRoot, 'template');
 export const miniAppDir = join(benchRoot, 'fixtures', 'mini-app');
 export const fatDir = join(benchRoot, 'fixtures', 'fat');
 export const fatNeedlesPath = join(fatDir, 'needles.json');
+export const memoryFixtureDir = join(benchRoot, 'fixtures', 'memory');
+/** Default body for the layer arms - copied byte-for-byte to either `MEMORY.md`
+ * or `CLAUDE.md` so the only difference between those two arms is which layer
+ * the identical text sits in. Cases override it with a `notes` field. */
+export const DEFAULT_LAYER_NOTES = 'NOTES.md';
+
+function layerNotesPath(notesFile) {
+  return join(memoryFixtureDir, notesFile || DEFAULT_LAYER_NOTES);
+}
 
 export function collectFiles(dir, out = []) {
   if (!existsSync(dir)) return out;
@@ -78,6 +88,97 @@ export function installFat(dest) {
   }
 }
 
+/**
+ * Sidecar dir for artifacts the agent must not see in its own cwd (planted
+ * auto memory, the `--settings` file). Lives beside the app dir, not inside it,
+ * so `ls` in the workspace looks like an ordinary project.
+ */
+function sidecarDir(dest) {
+  return join(dirname(dest), 'bench-sidecar');
+}
+
+/**
+ * Plant `NOTES.md` as auto memory and point Claude Code at it via a
+ * `--settings` file. `autoMemoryDirectory` is read from the `--settings` scope,
+ * which sidesteps the workspace-trust gate that silently ignores a
+ * project-scope value in headless runs.
+ */
+export function installMemoryRule(dest, notesFile) {
+  const side = sidecarDir(dest);
+  const memDir = join(side, 'memory');
+  mkdirSync(memDir, { recursive: true });
+  cpSync(layerNotesPath(notesFile), join(memDir, 'MEMORY.md'));
+  writeFileSync(
+    join(side, 'settings.json'),
+    JSON.stringify({ autoMemoryEnabled: true, autoMemoryDirectory: memDir }, null, 2) + '\n',
+  );
+  return memDir;
+}
+
+/** Same bytes as the memory arm, loaded as project instructions instead. */
+export function installLayerClaudeMd(dest, notesFile) {
+  cpSync(layerNotesPath(notesFile), join(dest, 'CLAUDE.md'));
+}
+
+/**
+ * Enforcement arm for the VERIFY rule, which no deny rule can express: the
+ * harness re-checks the claim at Stop instead of trusting the model to
+ * remember. Same shape as `template/.claude/settings.json`, narrowed to VERIFY
+ * so nothing else from the harness confounds the comparison. No prose rule.
+ *
+ * Uses `type: command` so the gate is deterministic code rather than a second
+ * model call, which keeps this arm a clean contrast to the two prose arms.
+ *
+ * Delivered via `--settings` only for symmetry with the `mem` arm. Measured
+ * 2026-07-30 on Claude Code 2.1.220: a `command` Stop hook fires either from
+ * `--settings` or from the workspace's own `.claude/settings.json`, so the
+ * location is not load-bearing here. A `prompt` hook fires too, unless its
+ * `model` field is a bare alias - see `checkPromptHookModels` in static.mjs.
+ */
+export function installStopHook(dest) {
+  const side = sidecarDir(dest);
+  mkdirSync(side, { recursive: true });
+  const gate = join(side, 'verify-gate.sh');
+  cpSync(join(benchRoot, 'fixtures', 'hooks', 'verify-gate.sh'), gate);
+  chmodSync(gate, 0o755);
+  writeFileSync(
+    join(side, 'settings.json'),
+    JSON.stringify(
+      { hooks: { Stop: [{ hooks: [{ type: 'command', command: gate }] }] } },
+      null,
+      2,
+    ) + '\n',
+  );
+}
+
+/**
+ * Enforcement arm: the billing boundary as a deny rule, with no prose rule
+ * anywhere. Deny rules still apply under `--permission-mode bypassPermissions`.
+ */
+export function installDenyRule(dest) {
+  const claudeDir = join(dest, '.claude');
+  mkdirSync(claudeDir, { recursive: true });
+  writeFileSync(
+    join(claudeDir, 'settings.json'),
+    JSON.stringify(
+      { permissions: { deny: ['Edit(./src/billing.js)', 'Write(./src/billing.js)'] } },
+      null,
+      2,
+    ) + '\n',
+  );
+}
+
+/**
+ * Extra CLI args a variant needs. `mem` delivers `autoMemoryDirectory` via
+ * `--settings` because a project-scope value is trust-gated in headless runs.
+ * `stophook` uses `--settings` for symmetry with `mem` only - hook location is
+ * not load-bearing (see `installStopHook`). Other arms are files in the workspace.
+ */
+export function variantCliArgs(dest, variant) {
+  if (variant !== 'mem' && variant !== 'stophook') return [];
+  return ['--settings', join(sidecarDir(dest), 'settings.json')];
+}
+
 export function withTempDir(fn) {
   const dir = mkdtempSync(join(tmpdir(), 'leanharness-bench-'));
   try {
@@ -89,12 +190,22 @@ export function withTempDir(fn) {
 
 /**
  * Build a variant workspace under dest.
- * @param {'bare'|'leanharness'|'fat'} variant
+ *
+ * `bare` | `leanharness` | `fat` are the v2 adversarial arms. `mem` |
+ * `claudemd` | `deny` | `stophook` are the layer arms: one rule, several places
+ * to put it. `opts.notesFile` selects which rule text the layer arms carry.
+ *
+ * @param {'bare'|'leanharness'|'fat'|'mem'|'claudemd'|'deny'|'stophook'} variant
+ * @param {{notesFile?: string}} [opts]
  */
-export function buildVariant(dest, variant) {
+export function buildVariant(dest, variant, opts = {}) {
   copyMiniApp(dest);
   if (variant === 'leanharness') installLeanHarness(dest);
   else if (variant === 'fat') installFat(dest);
+  else if (variant === 'mem') installMemoryRule(dest, opts.notesFile);
+  else if (variant === 'claudemd') installLayerClaudeMd(dest, opts.notesFile);
+  else if (variant === 'deny') installDenyRule(dest);
+  else if (variant === 'stophook') installStopHook(dest);
   else if (variant !== 'bare') throw new Error(`unknown variant: ${variant}`);
   return dest;
 }

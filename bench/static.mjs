@@ -20,6 +20,7 @@ import {
   collectFiles,
   fatNeedlesPath,
   packageRoot,
+  templateDir,
   withTempDir,
 } from './lib/install.mjs';
 import {
@@ -31,6 +32,43 @@ import {
 function loadFatNeedles() {
   if (!existsSync(fatNeedlesPath)) return null;
   return JSON.parse(readFileSync(fatNeedlesPath, 'utf8'));
+}
+
+/**
+ * Guard against a silently inert `prompt` hook.
+ *
+ * A `type: prompt` hook whose `model` is a bare alias never fires: measured
+ * 2026-07-30 on Claude Code 2.1.220, `"model": "haiku"` left a Stop hook inert
+ * (1 turn, no block) while omitting the field or using a full ID blocked as
+ * expected (7-10 turns). The failure is silent - no error, no log - so the only
+ * defense is a check. Omitting `model` already defaults to Haiku, so there is
+ * never a reason to write the alias.
+ */
+const BARE_MODEL_ALIASES = new Set(['haiku', 'sonnet', 'opus', 'fable']);
+
+function checkPromptHookModels() {
+  const settingsPath = join(templateDir, '.claude', 'settings.json');
+  if (!existsSync(settingsPath)) return { ok: true, checked: 0, findings: [] };
+  const settings = JSON.parse(readFileSync(settingsPath, 'utf8'));
+  const findings = [];
+  let checked = 0;
+  for (const [event, entries] of Object.entries(settings.hooks || {})) {
+    for (const entry of entries || []) {
+      for (const hook of entry.hooks || []) {
+        if (hook.type !== 'prompt' && hook.type !== 'agent') continue;
+        checked++;
+        if (hook.model && BARE_MODEL_ALIASES.has(hook.model)) {
+          findings.push({
+            event,
+            type: hook.type,
+            model: hook.model,
+            detail: `bare alias "${hook.model}" makes this hook inert; omit \`model\` (defaults to Haiku) or use a full model ID`,
+          });
+        }
+      }
+    }
+  }
+  return { ok: findings.length === 0, checked, findings };
 }
 
 /** Locate NEEDLE_* markers in a CLAUDE.md (for lost-instruction experiments). */
@@ -167,6 +205,7 @@ function installSmoke() {
 const needleMeta = loadFatNeedles();
 const variants = ['bare', 'leanharness', 'fat'].map((v) => measureVariant(v, needleMeta));
 const smoke = installSmoke();
+const hookConfig = checkPromptHookModels();
 
 const lean = variants.find((v) => v.variant === 'leanharness');
 const fat = variants.find((v) => v.variant === 'fat');
@@ -187,6 +226,7 @@ const report = {
         }
       : null,
   install_smoke: smoke,
+  hook_config_check: hookConfig,
 };
 
 writeFileSync(join(resultsDir, 'static.json'), JSON.stringify(report, null, 2) + '\n');
@@ -223,6 +263,16 @@ if (fat?.needles) {
 console.log(`\ninstall smoke: ${smoke.ok ? 'PASS' : 'FAIL'}`);
 if (!smoke.ok) {
   console.error(smoke);
+  process.exit(1);
+}
+
+console.log(
+  `prompt-hook model check: ${hookConfig.ok ? 'PASS' : 'FAIL'} (${hookConfig.checked} prompt/agent hook(s))`,
+);
+if (!hookConfig.ok) {
+  for (const f of hookConfig.findings) {
+    console.error(`  · ${f.event} ${f.type}: ${f.detail}`);
+  }
   process.exit(1);
 }
 console.log(`wrote ${join(resultsDir, 'static.json')}\n`);

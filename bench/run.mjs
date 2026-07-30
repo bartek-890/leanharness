@@ -18,7 +18,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { benchRoot, buildVariant } from './lib/install.mjs';
+import { benchRoot, buildVariant, variantCliArgs } from './lib/install.mjs';
 import { normalizeTranscript } from './lib/transcript.mjs';
 import { scoreCase } from './score.mjs';
 
@@ -28,12 +28,13 @@ const casesPath = join(benchRoot, 'cases.json');
 const DEFAULT_MODEL = 'claude-sonnet-5';
 
 function parseArgs(argv) {
-  const out = { caseId: null, variant: null, model: DEFAULT_MODEL, dryRun: false };
+  const out = { caseId: null, variant: null, model: DEFAULT_MODEL, dryRun: false, repeat: 1 };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--case') out.caseId = argv[++i];
     else if (a === '--variant') out.variant = argv[++i];
     else if (a === '--model') out.model = argv[++i];
+    else if (a === '--repeat') out.repeat = Math.max(1, Number(argv[++i]) || 1);
     else if (a === '--dry-run') out.dryRun = true;
     else if (a === '--help' || a === '-h') out.help = true;
   }
@@ -50,11 +51,11 @@ function fileHash(path) {
   return createHash('sha256').update(readFileSync(path)).digest('hex');
 }
 
-function runOne(caseDef, variant, model, dryRun) {
+function runOne(caseDef, variant, model, dryRun, runIndex = 0) {
   const dir = mkdtempSync(join(tmpdir(), 'leanharness-run-'));
   const app = join(dir, 'app');
   try {
-    buildVariant(app, variant);
+    buildVariant(app, variant, { notesFile: caseDef.notes });
 
     const baselineHashes = {};
     for (const a of caseDef.asserts || []) {
@@ -84,6 +85,7 @@ function runOne(caseDef, variant, model, dryRun) {
       permissionMode,
       '--model',
       model,
+      ...variantCliArgs(app, variant),
     ];
 
     const proc = spawnSync('claude', args, {
@@ -95,7 +97,9 @@ function runOne(caseDef, variant, model, dryRun) {
 
     const raw = `${proc.stdout || ''}${proc.stderr ? `\n${proc.stderr}` : ''}`;
     mkdirSync(resultsDir, { recursive: true });
-    const outBase = join(resultsDir, `${caseDef.id}-${variant}`);
+    // Run 1 keeps the legacy filename so published results stay addressable.
+    const suffix = runIndex ? `-r${runIndex + 1}` : '';
+    const outBase = join(resultsDir, `${caseDef.id}-${variant}${suffix}`);
     writeFileSync(`${outBase}.json`, raw);
     writeFileSync(`${outBase}.baseline.json`, JSON.stringify(baselineHashes, null, 2) + '\n');
 
@@ -171,7 +175,7 @@ function runOne(caseDef, variant, model, dryRun) {
 function main() {
   const args = parseArgs(process.argv.slice(2));
   if (args.help) {
-    console.log(`Usage: node bench/run.mjs [--case VD1] [--variant leanharness|bare|fat] [--model claude-sonnet-5] [--dry-run]
+    console.log(`Usage: node bench/run.mjs [--case VD1] [--variant leanharness|bare|fat|mem|claudemd|deny] [--model claude-sonnet-5] [--repeat N] [--dry-run]
 Requires Claude Code CLI (\`claude\`) authenticated. Costs API usage.
 Default model: ${DEFAULT_MODEL}
 `);
@@ -201,16 +205,29 @@ Default model: ${DEFAULT_MODEL}
       ? [args.variant]
       : caseDef.variants || ['bare', 'leanharness', 'fat'];
     for (const variant of variants) {
-      console.log(`→ ${caseDef.id} / ${variant}${caseDef.needle ? ` (${caseDef.needle})` : ''}`);
-      const result = runOne(caseDef, variant, args.model, args.dryRun);
-      rows.push(result);
-      if (args.dryRun) {
-        console.log(`  dry-run ok (workspace would be built as ${variant})`);
-        continue;
+      let passes = 0;
+      for (let i = 0; i < args.repeat; i++) {
+        const label = args.repeat > 1 ? ` run ${i + 1}/${args.repeat}` : '';
+        console.log(
+          `→ ${caseDef.id} / ${variant}${caseDef.needle ? ` (${caseDef.needle})` : ''}${label}`,
+        );
+        const result = runOne(caseDef, variant, args.model, args.dryRun, i);
+        result.run = i + 1;
+        rows.push(result);
+        if (args.dryRun) {
+          console.log(`  dry-run ok (workspace would be built as ${variant})`);
+          continue;
+        }
+        const ok = result.scored?.ok;
+        if (ok) passes++;
+        console.log(
+          `  ${ok ? 'PASS' : 'FAIL'}  score=${JSON.stringify(result.scored?.asserts?.map((a) => [a.type, a.ok]))}`,
+        );
+        if (!ok) failed++;
       }
-      const ok = result.scored?.ok;
-      console.log(`  ${ok ? 'PASS' : 'FAIL'}  score=${JSON.stringify(result.scored?.asserts?.map((a) => [a.type, a.ok]))}`);
-      if (!ok) failed++;
+      if (!args.dryRun && args.repeat > 1) {
+        console.log(`  ${variant}: ${passes}/${args.repeat} passed\n`);
+      }
     }
   }
 
