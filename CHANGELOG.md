@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.6.2 — 2026-08-02
+
+### Changed
+
+- **`homepage` points at the repository again.** It had been aimed at the
+  article, but `homepage` is the prominent link in npm's sidebar, so every
+  visitor arriving from the package page was routed away from the source. The
+  article stays reachable from the README and the package description.
+
+No template or CLI changes — `npx leanharness` installs exactly what 0.6.1 did.
+
 ## 0.6.1 — 2026-07-30
 
 ### Fixed
