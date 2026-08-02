@@ -14,7 +14,7 @@
   ],
   "license": "MIT",
   "author": "Bartłomiej Krupa (https://bartlomiejkrupa.dev)",
-  "homepage": "https://bartlomiejkrupa.dev/articles/claude-code-harness-starter/",
+  "homepage": "https://github.com/bartek-890/leanharness",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/bartek-890/leanharness.git"
