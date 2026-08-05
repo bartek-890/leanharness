@@ -3,7 +3,17 @@
     "deny": [
       "Read(~/.ssh/**)",
       "Read(~/.aws/**)",
-      "Read(./.env*)"
+      "Read(./.env*)",
+      "Bash(rm -rf *)",
+      "Bash(git push --force *)",
+      "Bash(git push -f *)",
+      "Bash(npm publish *)",
+      "Bash(gh release create *)"
+    ],
+    "ask": [
+      "Bash(git reset --hard *)",
+      "Bash(psql *)",
+      "Bash(aws s3 rm *)"
     ]
   },
   "hooks": {
