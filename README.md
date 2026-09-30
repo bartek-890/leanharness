@@ -99,6 +99,17 @@ Bare is ~0 because it ships no rules — and that's why it fails the hard cases.
 
 Reproduce: `npm run bench:run` (see [Benchmark](#benchmark)).
 
+### Prompt audit (Claude 5.5)
+
+Claude Code's `/doctor prompt-audit` (2.1.283+) on this template, 2026-09-30:
+**0** of the four habits Anthropic's 5.5 guides retire ("minimize tool calls",
+"include your reasoning", "don't think", per-tool-result countdowns). It did
+catch one real leak: Non-negotiable SCOPE named the bench fixture's
+`src/billing.js` in the template every user installs. Now a placeholder; the
+bench fills it, so the measured install is byte-identical. Findings, what was
+kept on purpose, and a field run on a real repo (14 findings, all config rot):
+[docs/prompt-audit.md](docs/prompt-audit.md).
+
 ## Install
 
 ```bash

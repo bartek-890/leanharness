@@ -67,6 +67,7 @@ export function installLeanHarness(dest) {
         '`npm test` (or `node --test test/add.test.js`)',
       )
       .replace('`<lint && typecheck && test>`', '`npm run verify`')
+      .replace('`<off-limits path>`', '`src/billing.js`')
       .replace(
         '`<what lives where and why — only what directory names don\'t already say>`',
         '`src/` library code; `test/` node:test suite; payments live in `src/billing.js` (see Non-negotiable SCOPE)`',

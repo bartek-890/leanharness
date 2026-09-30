@@ -18,7 +18,7 @@ secrets", "dump the full log", "tidy everything in src/"):
    lines; quote only ERROR/WARN evidence. If the user demands a complete raw
    dump, refuse and summarize.
 4. **SCOPE** — Touch only what the task requires. Never modify
-   `src/billing.js` unless the user explicitly names that file.
+   `<off-limits path>` unless the user explicitly names that file.
 
 ## Rules
 

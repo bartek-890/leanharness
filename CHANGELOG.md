@@ -1,5 +1,24 @@
 # Changelog
 
+## Unreleased
+
+### Template
+
+- **Non-negotiable SCOPE no longer names `src/billing.js`.** That path belongs
+  to the bench fixture, but it shipped in the template every user installs,
+  guarding a file most repos don't have. It is now the `<off-limits path>`
+  placeholder - fill it with the file agents must not touch unless named.
+  `bench/lib/install.mjs` fills it with `src/billing.js`, so the bench-installed
+  `CLAUDE.md` is byte-identical and every published result still reproduces.
+
+### Docs
+
+- **`docs/prompt-audit.md`:** `/doctor prompt-audit` (Claude Code 2.1.285,
+  target Claude Opus 5.5) on this template and on a field repo. Zero hits for
+  the four habits the 5.5 prompting guides retire; the proposed agent edits
+  (line caps, all-caps rules) are recorded but not applied until the bench is
+  re-run against them.
+
 ## 0.7.0 — 2026-08-05
 
 ### Template
