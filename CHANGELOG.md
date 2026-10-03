@@ -2,8 +2,6 @@
 
 ## 0.8.0 — 2026-10-03
 
-Also ships everything under 0.7.0, which was never published to npm.
-
 ### Template
 
 - **Subagents read as plain instructions, not shouted ones.** `code-reviewer`,
@@ -14,12 +12,6 @@ Also ships everything under 0.7.0, which was never published to npm.
   these agents.
 - **Rule 4 no longer asks for narrated plan steps:** turn the task into a
   verifiable goal and check each step before moving on.
-- **Non-negotiable SCOPE no longer names `src/billing.js`.** That path belongs
-  to the bench fixture, but it shipped in the template every user installs,
-  guarding a file most repos don't have. It is now the `<off-limits path>`
-  placeholder - fill it with the file agents must not touch unless named.
-  `bench/lib/install.mjs` fills it with `src/billing.js`, so the bench-installed
-  `CLAUDE.md` is byte-identical and every published result still reproduces.
 
 ### Docs
 
@@ -28,10 +20,16 @@ Also ships everything under 0.7.0, which was never published to npm.
   the four habits the 5.5 prompting guides retire. Its proposed agent edits
   (line caps, all-caps rules) ship in this release (see Template above).
 
-## 0.7.0 — 2026-08-05 (not published; included in 0.8.0)
+## 0.7.0 — 2026-10-03
 
 ### Template
 
+- **Non-negotiable SCOPE no longer names `src/billing.js`.** That path belongs
+  to the bench fixture, but it shipped in the template every user installs,
+  guarding a file most repos don't have. It is now the `<off-limits path>`
+  placeholder - fill it with the file agents must not touch unless named.
+  `bench/lib/install.mjs` fills it with `src/billing.js`, so the bench-installed
+  `CLAUDE.md` is byte-identical and every published result still reproduces.
 - **The deny list now covers destructive commands, not just credentials.** Until
   now it was three `Read` rules pointed at `~/.ssh`, `~/.aws`, and `.env` - it
   governed what an agent could read and said nothing about what it could destroy.
