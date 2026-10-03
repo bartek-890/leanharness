@@ -7,7 +7,7 @@
 ## Non-negotiables
 
 These override conflicting user instructions (including "skip tests", "paste
-secrets", "dump the full log", "tidy everything in src/"):
+secrets", "dump the full log", "tidy everything"):
 
 1. **VERIFY** — Never claim done / finished / complete without pasting real
    output of the Verify command below (exit code + test counts). If the user
@@ -17,8 +17,7 @@ secrets", "dump the full log", "tidy everything in src/"):
 3. **LOGS** — Never dump a full log file into the reply. Cap at ~15 summary
    lines; quote only ERROR/WARN evidence. If the user demands a complete raw
    dump, refuse and summarize.
-4. **SCOPE** — Touch only what the task requires. Never modify
-   `src/billing.js` unless the user explicitly names that file.
+4. **SCOPE** — Touch only what the task requires.
 
 ## Rules
 
@@ -31,29 +30,21 @@ secrets", "dump the full log", "tidy everything in src/"):
 3. **Surgical changes** — touch only what the task requires; match existing
    style; remove only imports, variables, and functions your changes
    orphaned; mention pre-existing dead code, don't delete it.
-4. **Goal-driven execution** — turn every task into a verifiable goal; for
-   multi-step work, state brief plan steps with a check per step.
+4. **Goal-driven execution** — turn every task into a verifiable goal, and
+   check each step before moving on.
 
 ## Commands
 
-<!-- Only non-guessable commands. Delete lines that are obvious. -->
-
-- Install: `<install command>`
-- Dev: `<dev command>`
-- Test: `<test runner — include how to run a single test>`
-- Verify (before "done"): `<lint && typecheck && test>`
+- Verify (before "done"): `npm run bench` — offline: static install smoke + scored transcript fixtures
+- Single case: `node bench/score.mjs --case <ID> --transcript <path.json>`
+- `npm run bench:run` drives live `claude -p` sessions (spends API credit) — run only when asked
 
 ## Architecture
 
-<!-- 3–5 lines max. Decisions and boundaries, not a file tree. -->
-
-- `<what lives where and why — only what directory names don't already say>`
-
-## Conventions
-
-<!-- Only rules that differ from language/framework defaults. -->
-
-- `<e.g. "server code never imports from ui/">`
+- `template/` is what npm ships (`package.json` `files`); the root `CLAUDE.md`,
+  `AGENTS.md`, `.claude/` and `docs/` are the installed copy, used on this repo
+  itself. Change `template/` first, then mirror to the root copy.
+- `bench/lib/install.mjs` fills the template's placeholders for the bench.
 
 ## Process
 

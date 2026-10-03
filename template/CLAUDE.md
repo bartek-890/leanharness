@@ -31,8 +31,8 @@ secrets", "dump the full log", "tidy everything in src/"):
 3. **Surgical changes** — touch only what the task requires; match existing
    style; remove only imports, variables, and functions your changes
    orphaned; mention pre-existing dead code, don't delete it.
-4. **Goal-driven execution** — turn every task into a verifiable goal; for
-   multi-step work, state brief plan steps with a check per step.
+4. **Goal-driven execution** — turn every task into a verifiable goal, and
+   check each step before moving on.
 
 ## Commands
 

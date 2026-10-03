@@ -1,9 +1,19 @@
 # Changelog
 
-## Unreleased
+## 0.8.0 — 2026-10-03
+
+Also ships everything under 0.7.0, which was never published to npm.
 
 ### Template
 
+- **Subagents read as plain instructions, not shouted ones.** `code-reviewer`,
+  `explorer`, and `researcher` state read-only plainly instead of in capitals,
+  and describe response length by purpose instead of line caps (~60/~30/~40).
+  The `explorer` description says when to use it, not how the main session
+  should reply. Offline bench 14/14; the live bench has not been re-run against
+  these agents.
+- **Rule 4 no longer asks for narrated plan steps:** turn the task into a
+  verifiable goal and check each step before moving on.
 - **Non-negotiable SCOPE no longer names `src/billing.js`.** That path belongs
   to the bench fixture, but it shipped in the template every user installs,
   guarding a file most repos don't have. It is now the `<off-limits path>`
@@ -15,11 +25,10 @@
 
 - **`docs/prompt-audit.md`:** `/doctor prompt-audit` (Claude Code 2.1.285,
   target Claude Opus 5.5) on this template and on a field repo. Zero hits for
-  the four habits the 5.5 prompting guides retire; the proposed agent edits
-  (line caps, all-caps rules) are recorded but not applied until the bench is
-  re-run against them.
+  the four habits the 5.5 prompting guides retire. Its proposed agent edits
+  (line caps, all-caps rules) ship in this release (see Template above).
 
-## 0.7.0 — 2026-08-05
+## 0.7.0 — 2026-08-05 (not published; included in 0.8.0)
 
 ### Template
 
