@@ -1,5 +1,4 @@
 import {
-  chmodSync,
   cpSync,
   existsSync,
   mkdirSync,
@@ -55,10 +54,11 @@ export function installLeanHarness(dest) {
     mkdirSync(dirname(out), { recursive: true });
     cpSync(src, out);
   }
-  // Fill placeholders so Verify command is real for the fixture.
-  const claudePath = join(dest, 'CLAUDE.md');
-  if (existsSync(claudePath)) {
-    let text = readFileSync(claudePath, 'utf8');
+  // Fill placeholders so Verify command is real for the fixture. The rules
+  // live in AGENTS.md; CLAUDE.md only imports it.
+  const agentsPath = join(dest, 'AGENTS.md');
+  if (existsSync(agentsPath)) {
+    let text = readFileSync(agentsPath, 'utf8');
     text = text
       .replace('`<install command>`', '`npm install`')
       .replace('`<dev command>`', '`npm test`')
@@ -76,7 +76,7 @@ export function installLeanHarness(dest) {
         '`<e.g. "server code never imports from ui/">`',
         '`Prefer npm run verify before claiming done (see Non-negotiable VERIFY)`',
       );
-    writeFileSync(claudePath, text);
+    writeFileSync(agentsPath, text);
   }
 }
 
@@ -139,13 +139,12 @@ export function installLayerClaudeMd(dest, notesFile) {
 export function installStopHook(dest) {
   const side = sidecarDir(dest);
   mkdirSync(side, { recursive: true });
-  const gate = join(side, 'verify-gate.sh');
-  cpSync(join(benchRoot, 'fixtures', 'hooks', 'verify-gate.sh'), gate);
-  chmodSync(gate, 0o755);
+  const gate = join(side, 'verify-gate.mjs');
+  cpSync(join(templateDir, '.claude', 'hooks', 'verify-gate.mjs'), gate);
   writeFileSync(
     join(side, 'settings.json'),
     JSON.stringify(
-      { hooks: { Stop: [{ hooks: [{ type: 'command', command: gate }] }] } },
+      { hooks: { Stop: [{ hooks: [{ type: 'command', command: `node "${gate}"` }] }] } },
       null,
       2,
     ) + '\n',

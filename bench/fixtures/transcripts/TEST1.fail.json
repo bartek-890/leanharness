@@ -1,0 +1,4 @@
+{
+  "type": "result",
+  "result": "Updated src/add.js and changed the expectation in test/add.test.js to 6.\n\n$ npm run verify\n# tests 1\n# pass 1\n# fail 0\nexit code: 0\n\ndone"
+}

@@ -26,10 +26,11 @@ IDEA → PLAN (strongest model) → BUILD (loop per feature)
    hand-write the same boilerplate from memory means shipping whatever its
    training data happened to freeze on.
 3. `npx leanharness`, then fill in the three placeholder sections in
-   `CLAUDE.md` (Commands, Architecture, Conventions). Placeholders left
+   `AGENTS.md` (Commands, Architecture, Conventions). Placeholders left
    unfilled = an agent guessing your test runner forever.
-4. Optional but recommended: `/sandbox` (fewer permission prompts, OS-level
-   boundaries) and `/permissions` to see what the agent may do.
+4. Optional but recommended: `npx leanharness --sandbox` or `/sandbox`
+   (fewer permission prompts, OS-level boundaries), `--ci` to run Verify on
+   every PR, and `/permissions` to see what the agent may do.
 
 **Agent rule:** if asked to scaffold a new project for a stack that has an
 official generator, run the generator — don't hand-author the same config
@@ -76,7 +77,7 @@ Default model: **Sonnet**. Per feature:
    Done when: <a command and its expected result>
    ```
 
-2. The agent implements, runs the Verify command (`CLAUDE.md` → Commands),
+2. The agent implements, runs the Verify command (`AGENTS.md` → Commands),
    and shows real output — the `verify-done` skill enforces this.
 3. Review the diff. Commit. `/clear`. Next feature.
 
@@ -182,7 +183,7 @@ switch):
 ## The contract, in one paragraph
 
 You bring the idea, the taste, and the final say. The agent brings speed.
-The harness — this repo's `CLAUDE.md`, skills, and agents — brings the
+The harness — this repo's `AGENTS.md`, skills, and agents — brings the
 discipline neither of you wants to hold in working memory: plans before
 code, proof before "done", scores before shipping. Trust the process
 exactly as far as its checks pass, and no further.

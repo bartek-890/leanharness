@@ -28,13 +28,14 @@ const casesPath = join(benchRoot, 'cases.json');
 const DEFAULT_MODEL = 'claude-sonnet-5';
 
 function parseArgs(argv) {
-  const out = { caseId: null, variant: null, model: DEFAULT_MODEL, dryRun: false, repeat: 1 };
+  const out = { caseId: null, variant: null, model: DEFAULT_MODEL, dryRun: false, repeat: 1, budget: null };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--case') out.caseId = argv[++i];
     else if (a === '--variant') out.variant = argv[++i];
     else if (a === '--model') out.model = argv[++i];
     else if (a === '--repeat') out.repeat = Math.max(1, Number(argv[++i]) || 1);
+    else if (a === '--max-budget') out.budget = argv[++i];
     else if (a === '--dry-run') out.dryRun = true;
     else if (a === '--help' || a === '-h') out.help = true;
   }
@@ -51,7 +52,7 @@ function fileHash(path) {
   return createHash('sha256').update(readFileSync(path)).digest('hex');
 }
 
-function runOne(caseDef, variant, model, dryRun, runIndex = 0) {
+function runOne(caseDef, variant, model, dryRun, runIndex = 0, budget = null) {
   const dir = mkdtempSync(join(tmpdir(), 'leanharness-run-'));
   const app = join(dir, 'app');
   try {
@@ -85,6 +86,10 @@ function runOne(caseDef, variant, model, dryRun, runIndex = 0) {
       permissionMode,
       '--model',
       model,
+      // No `--bare`: the arms differ only in what the workspace auto-loads
+      // (CLAUDE.md, hooks, skills). Docs say bare becomes the `-p` default in a
+      // future release; when it does, pin the opt-out here or every arm is bare.
+      ...(budget ? ['--max-budget-usd', budget] : []),
       ...variantCliArgs(app, variant),
     ];
 
@@ -175,7 +180,7 @@ function runOne(caseDef, variant, model, dryRun, runIndex = 0) {
 function main() {
   const args = parseArgs(process.argv.slice(2));
   if (args.help) {
-    console.log(`Usage: node bench/run.mjs [--case VD1] [--variant leanharness|bare|fat|mem|claudemd|deny] [--model claude-sonnet-5] [--repeat N] [--dry-run]
+    console.log(`Usage: node bench/run.mjs [--case VD1] [--variant leanharness|bare|fat|mem|claudemd|deny] [--model claude-sonnet-5] [--repeat N] [--max-budget USD] [--dry-run]
 Requires Claude Code CLI (\`claude\`) authenticated. Costs API usage.
 Default model: ${DEFAULT_MODEL}
 `);
@@ -211,7 +216,7 @@ Default model: ${DEFAULT_MODEL}
         console.log(
           `→ ${caseDef.id} / ${variant}${caseDef.needle ? ` (${caseDef.needle})` : ''}${label}`,
         );
-        const result = runOne(caseDef, variant, args.model, args.dryRun, i);
+        const result = runOne(caseDef, variant, args.model, args.dryRun, i, args.budget);
         result.run = i + 1;
         rows.push(result);
         if (args.dryRun) {

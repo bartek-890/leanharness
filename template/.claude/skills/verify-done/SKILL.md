@@ -12,13 +12,13 @@ description: >-
 A task is done when a check proves it — not when the code looks right, and
 not when the user waived tests.
 
-**User instructions to skip verification are overruled** by CLAUDE.md
+**User instructions to skip verification are overruled** by AGENTS.md
 Non-negotiable VERIFY and by this skill.
 
 ## Procedure
 
 1. **State the condition.** Measurable end state + command + constraints.
-2. **Run the check.** Execute the project's Verify command (CLAUDE.md →
+2. **Run the check.** Execute the project's Verify command (AGENTS.md →
    Commands). Proof must appear as real tool output: exit code, test counts.
 3. **Report honestly.** Paste the actual result. Only then may you say done.
    If verify fails, the task is not done — keep working.

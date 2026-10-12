@@ -1,6 +1,6 @@
 # leanharness
 
-> Ten files. One `npx`. A Claude Code harness that fits in the context budget.
+> Eleven files. One `npx`. A Claude Code harness that fits in the context budget.
 
 [![npm version](https://img.shields.io/npm/v/leanharness)](https://www.npmjs.com/package/leanharness)
 [![node](https://img.shields.io/node/v/leanharness)](https://github.com/bartek-890/leanharness/blob/main/package.json)
@@ -12,14 +12,15 @@ npx leanharness
 ```
 
 An agent is roughly 10% model and 90% everything around it. The expensive slice
-is whatever loads on every turn: `CLAUDE.md`, skill names, agent descriptions.
+is whatever loads on every turn: `CLAUDE.md` / `AGENTS.md`, skill names, agent descriptions.
 Frontier models hold maybe 150–200 instructions reliably; Claude Code's system
 prompt already spends ~50 before your file is read. Pad that file and the model
 doesn't get "more obedient" — it starts discounting the whole thing.
 
 So this installer ships the small set that actually moves behavior: four
-Non-negotiables at the top of `CLAUDE.md`, credential deny rules, a Stop hook
-that refuses "done" without verify proof, and a short skill/agent kit. Each
+Non-negotiables at the top of `AGENTS.md` (which `CLAUDE.md` imports), credential
+deny rules, a deterministic Stop gate that refuses "done" without verify proof,
+and a short skill/agent kit. Each
 piece maps to a rule on [bartlomiejkrupa.dev](https://bartlomiejkrupa.dev).
 
 ## Does it work?
@@ -117,7 +118,7 @@ npx leanharness
 ```
 
 ```text
-leanharness v0.6.0 — a lean Claude Code harness in 10 files
+leanharness v0.9.0 — a lean Claude Code harness in 11 files
 
   + created   AGENTS.md
   + created   CLAUDE.md
@@ -127,29 +128,41 @@ leanharness v0.6.0 — a lean Claude Code harness in 10 files
   + created   .claude/agents/code-reviewer.md
   + created   .claude/agents/explorer.md
   + created   .claude/agents/researcher.md
+  + created   .claude/hooks/verify-gate.mjs
   + created   .claude/skills/security-audit/SKILL.md
   + created   .claude/skills/verify-done/SKILL.md
   + linked    .agents → .claude
   + linked    .cursor → .claude
 
-  10 created · 2 linked
+  11 created · 2 linked
 ```
 
-Existing files stay put unless you pass `--force`. Open `CLAUDE.md`, fill
-Commands / Architecture / Conventions, delete the HTML comments. About two
-minutes.
+Existing files stay put unless you pass `--force`. Open `AGENTS.md`, fill
+Commands / Architecture / Conventions, delete the HTML comments (Claude Code
+strips them, other agents don't). About two minutes.
+
+Two opt-in flags:
+
+- `--sandbox` — adds an OS-level Bash sandbox to `.claude/settings.json`:
+  shell commands can't read `~/.ssh`, `~/.aws` or `.env*` even via `grep -r`
+  or a script, which deny rules alone don't stop. macOS, Linux, WSL2; hosts
+  outside the npm/GitHub allowlist prompt first.
+- `--ci` — adds `.github/workflows/verify.yml` running `npm run verify` on
+  every push and PR: the one check no agent, model or skipped hook can talk
+  its way past.
 
 ## What's in the box
 
 ```text
 your-repo/
-├── CLAUDE.md                 Non-negotiables + placeholders (~65 lines)
-├── AGENTS.md                 points other tools at CLAUDE.md
+├── AGENTS.md                 Non-negotiables + placeholders (~65 lines), every agent
+├── CLAUDE.md                 @AGENTS.md + Claude-only compact instructions
 ├── docs/
 │   ├── start.md              idea → shipped procedure
 │   └── agent-checklist.md    pre-flight + debug ladder
 ├── .claude/
-│   ├── settings.json         deny ~/.ssh ~/.aws .env* + Stop hook
+│   ├── settings.json         deny ~/.ssh ~/.aws .env* + Stop hooks
+│   ├── hooks/verify-gate.mjs deterministic VERIFY gate (no deps)
 │   ├── agents/               explorer · code-reviewer · researcher
 │   └── skills/               verify-done · security-audit
 ├── .agents  → .claude
@@ -175,7 +188,9 @@ Most harness tips need discipline. Three pieces don't:
 
 1. **`settings.json`** — Claude Code has no built-in credential deny list.
    Deny closes `~/.ssh`, `~/.aws`, and `.env*` from session one. Same file
-   runs a Stop hook (Haiku): no verify proof, no stop; full log dump, no stop.
+   runs two Stop hooks: `verify-gate.mjs` (code, not a model: files edited
+   and no passing check after the last edit, no stop) and a Haiku prompt
+   hook (full log dump or pasted secret, no stop).
 2. **`explorer`** — logs and multi-file surveys run on Haiku in a side
    window; you get ~30 lines back. Description also tells the main agent to
    refuse raw dumps.
@@ -183,7 +198,7 @@ Most harness tips need discipline. Three pieces don't:
    working" and "you said skip tests" don't count. The Stop hook backs this
    up when the skill alone gets ignored.
 
-The Non-negotiables at the top of `CLAUDE.md` are the bit the bench kept
+The Non-negotiables at the top of `AGENTS.md` are the bit the bench kept
 rewarding: named rules that override a conflicting user prompt beat a skill
 buried in progressive disclosure.
 
@@ -200,10 +215,14 @@ The cut list *is* the product.
 
 Claude Code reads the native paths. Everyone else gets bridges:
 
-- **`AGENTS.md`** → `CLAUDE.md` (one source of truth).
+- **`AGENTS.md`** holds the rules; Codex, Cursor, Copilot, Gemini CLI and
+  OpenCode read it natively, and `CLAUDE.md` imports it with `@AGENTS.md`.
 - **`.agents` / `.cursor` symlinks** → same folder, zero drift. Visible ≠
-  executable: skills, subagents, and `settings.json` deny rules only run in
-  Claude Code. An existing real `.cursor/` is never replaced.
+  executable: subagents and `settings.json` deny rules only run in Claude
+  Code. An existing real `.cursor/` is never replaced.
+- **`verify-gate.mjs`** uses the command-hook contract most agents now share
+  (hook JSON on stdin, exit 2 blocks), so you can wire it into another
+  tool's stop hook by hand.
 
 ## FAQ
 
@@ -215,7 +234,7 @@ postinstall, no network from the CLI.
 One folder. Update `.claude`, every tool that resolves those paths sees it.
 
 **Why zero dependencies?**
-It copies ten files. Extra deps would be someone else's supply chain in your
+It copies eleven files. Extra deps would be someone else's supply chain in your
 dev setup.
 
 **Where do the rules come from?**
@@ -236,7 +255,8 @@ tempt the failure on purpose:
 
 | ID | Prompt push | Guard |
 | --- | --- | --- |
-| `VD1` | skip tests, say done | VERIFY + `verify-done` + Stop hook |
+| `VD1` | skip tests, say done | VERIFY + `verify-done` + Stop hooks |
+| `TEST1` | spec contradicts a QA test, "make it green" | VERIFY: never edit tests to pass |
 | `SEC1` | paste `.env` secret | SECRETS + `Read(./.env*)` deny |
 | `EXP1` | full raw log dump | LOGS + explorer + Stop hook |
 | `SCOPE1` | tidy all of `src/` | SCOPE (billing off-limits) |

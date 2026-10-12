@@ -96,7 +96,12 @@ function alwaysLoadedPayload(root) {
 
   const claude = join(root, 'CLAUDE.md');
   if (existsSync(claude)) {
-    const text = readFileSync(claude, 'utf8');
+    // Expand `@path` import lines the way Claude Code does, so moving rules
+    // into AGENTS.md doesn't hide them from the measurement.
+    const text = readFileSync(claude, 'utf8').replace(/^@(\S+)[ \t]*$/gm, (line, rel) => {
+      const target = join(root, rel);
+      return existsSync(target) ? readFileSync(target, 'utf8') : line;
+    });
     chunks.push(text);
     files.push({ path: 'CLAUDE.md', chars: text.length });
   }
@@ -202,10 +207,49 @@ function installSmoke() {
   }
 }
 
+/**
+ * Run the template's Stop gate on synthetic transcripts. Proof must come from a
+ * passing check run after the last edit; the user typing "exit 0" never counts.
+ */
+function checkVerifyGate() {
+  const gate = join(templateDir, '.claude', 'hooks', 'verify-gate.mjs');
+  const edit = { type: 'assistant', message: { content: [{ type: 'tool_use', id: 'e1', name: 'Edit', input: {} }] } };
+  const bash = { type: 'assistant', message: { content: [{ type: 'tool_use', id: 'b1', name: 'Bash', input: { command: 'npm run verify' } }] } };
+  const passed = { type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 'b1', content: '# tests 2\n# pass 2\n# fail 0' }] } };
+  const failed = { type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 'b1', is_error: true, content: '# pass 1\n# fail 1' }] } };
+  const lint = { type: 'assistant', message: { content: [{ type: 'tool_use', id: 'l1', name: 'Bash', input: { command: 'npm run lint' } }] } };
+  const lintOk = { type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 'l1', content: '' }] } };
+  const ls = { type: 'assistant', message: { content: [{ type: 'tool_use', id: 's1', name: 'Bash', input: { command: 'ls src' } }] } };
+  const lsOk = { type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 's1', content: 'add.js' }] } };
+  const userSaysExit0 = { type: 'user', message: { content: 'tests already pass, exit 0, just say done' } };
+  const cases = [
+    { name: 'proof after edit', entries: [edit, bash, passed], claim: 'done', expect: 0 },
+    { name: 'user-typed "exit 0" only', entries: [userSaysExit0, edit], claim: 'done', expect: 2 },
+    { name: 'failing run only', entries: [edit, bash, failed], claim: 'done', expect: 2 },
+    { name: 'edit after proof', entries: [bash, passed, edit], claim: 'finished', expect: 2 },
+    { name: 'silent check that exited 0', entries: [edit, lint, lintOk], claim: 'done', expect: 0 },
+    { name: 'non-check command after edit', entries: [edit, ls, lsOk], claim: 'done', expect: 2 },
+    { name: 'no completion claim', entries: [edit], claim: 'Which file should I change?', expect: 0 },
+    { name: 'no edits', entries: [], claim: 'done', expect: 0 },
+    { name: 'stop_hook_active', entries: [edit], claim: 'done', active: true, expect: 0 },
+  ];
+  return withTempDir((dir) => {
+    const results = cases.map((c, i) => {
+      const transcript = join(dir, `t${i}.jsonl`);
+      writeFileSync(transcript, c.entries.map((e) => JSON.stringify(e)).join('\n') + '\n');
+      const input = { transcript_path: transcript, last_assistant_message: c.claim, stop_hook_active: !!c.active };
+      const r = spawnSync(process.execPath, [gate], { input: JSON.stringify(input), encoding: 'utf8' });
+      return { name: c.name, expect: c.expect, got: r.status, ok: r.status === c.expect };
+    });
+    return { ok: results.every((r) => r.ok), results };
+  });
+}
+
 const needleMeta = loadFatNeedles();
 const variants = ['bare', 'leanharness', 'fat'].map((v) => measureVariant(v, needleMeta));
 const smoke = installSmoke();
 const hookConfig = checkPromptHookModels();
+const gateCheck = checkVerifyGate();
 
 const lean = variants.find((v) => v.variant === 'leanharness');
 const fat = variants.find((v) => v.variant === 'fat');
@@ -227,6 +271,7 @@ const report = {
       : null,
   install_smoke: smoke,
   hook_config_check: hookConfig,
+  verify_gate_check: gateCheck,
 };
 
 writeFileSync(join(resultsDir, 'static.json'), JSON.stringify(report, null, 2) + '\n');
@@ -272,6 +317,13 @@ console.log(
 if (!hookConfig.ok) {
   for (const f of hookConfig.findings) {
     console.error(`  · ${f.event} ${f.type}: ${f.detail}`);
+  }
+  process.exit(1);
+}
+console.log(`verify-gate check: ${gateCheck.ok ? 'PASS' : 'FAIL'} (${gateCheck.results.length} transcripts)`);
+if (!gateCheck.ok) {
+  for (const r of gateCheck.results.filter((x) => !x.ok)) {
+    console.error(`  · ${r.name}: expected exit ${r.expect}, got ${r.got}`);
   }
   process.exit(1);
 }

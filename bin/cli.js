@@ -10,6 +10,7 @@ import {
   readdirSync,
   readFileSync,
   symlinkSync,
+  writeFileSync,
 } from 'node:fs';
 import { dirname, join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -50,14 +51,20 @@ if (args.includes('--help') || args.includes('-h')) {
   console.log(`
 ${banner}
 
-Usage: npx leanharness [--force]
+Usage: npx leanharness [--force] [--sandbox] [--ci]
 
-Copies the harness into the current directory: CLAUDE.md, AGENTS.md,
-docs/agent-checklist.md, .claude/ (skills, read-only agents, permission
-defaults). Existing files are never touched without --force.
+Copies the harness into the current directory: AGENTS.md (the rules),
+CLAUDE.md (imports AGENTS.md), docs/, .claude/ (skills, read-only agents,
+permission defaults, verify gate). Existing files are never touched
+without --force.
 
 Options:
   --force      overwrite files that already exist
+  --sandbox    add an OS-level Bash sandbox to .claude/settings.json that
+               blocks reading ~/.ssh, ~/.aws and .env files (macOS, Linux,
+               WSL2; hosts outside the allowlist prompt)
+  --ci         add .github/workflows/verify.yml running the Verify command
+               on every push and pull request
   -h, --help   show this help
 
 Docs: https://github.com/bartek-890/leanharness
@@ -118,6 +125,56 @@ for (const name of ['.agents', '.cursor']) {
   }
 }
 
+// Opt-in extras: kept out of template/ so a plain install stays unchanged.
+if (args.includes('--sandbox')) {
+  const settingsPath = join(targetDir, '.claude', 'settings.json');
+  const settings = JSON.parse(readFileSync(settingsPath, 'utf8'));
+  if (settings.sandbox) {
+    skipped++;
+    console.log(`  ${dim('· skipped   sandbox (already in .claude/settings.json)')}`);
+  } else {
+    settings.sandbox = {
+      enabled: true,
+      allowUnsandboxedCommands: false,
+      failIfUnavailable: true,
+      filesystem: { denyRead: ['~/.ssh', '~/.aws', './**/.env*'] },
+      network: { allowedDomains: ['registry.npmjs.org', 'github.com'] },
+    };
+    writeFileSync(settingsPath, `${JSON.stringify(settings, null, 2)}\n`);
+    created++;
+    console.log(`  ${green('+ created')}   sandbox ${dim('in .claude/settings.json')}`);
+  }
+}
+
+if (args.includes('--ci')) {
+  const workflow = join(targetDir, '.github', 'workflows', 'verify.yml');
+  if (existsSync(workflow)) {
+    skipped++;
+    console.log(`  ${dim('· skipped   .github/workflows/verify.yml (exists)')}`);
+  } else {
+    mkdirSync(dirname(workflow), { recursive: true });
+    writeFileSync(
+      workflow,
+      `name: verify
+on: [push, pull_request]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      # Keep in sync with the Verify command in AGENTS.md.
+      - run: npm run verify
+`,
+    );
+    created++;
+    console.log(`  ${green('+ created')}   .github/workflows/verify.yml`);
+  }
+}
+
 const summary = [`${created} created`];
 if (linked) summary.push(`${linked} linked`);
 if (replaced) summary.push(`${replaced} replaced`);
@@ -132,7 +189,7 @@ if (created === 0 && replaced === 0 && linked === 0) {
 } else {
   console.log(`
   ${bold('Next steps')}
-  ${dim('1.')} Fill in the placeholders in CLAUDE.md — Commands, Architecture, Conventions
+  ${dim('1.')} Fill in the placeholders in AGENTS.md — Commands, Architecture, Conventions
   ${dim('2.')} Open docs/start.md — the idea → shipped operating procedure
   ${dim('3.')} Start Claude Code — the harness loads at session start
 `);

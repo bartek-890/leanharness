@@ -1,5 +1,56 @@
 # Changelog
 
+## 0.9.0 — 2026-10-12
+
+Rules move from prose the model may skip into checks it can't.
+
+### Template
+
+- **`AGENTS.md` is now the rule file; `CLAUDE.md` imports it.** Codex,
+  Cursor, OpenCode and other agents read `AGENTS.md` natively but don't
+  expand `@CLAUDE.md`, so before this they saw a five-line pointer instead of
+  the Non-negotiables. `CLAUDE.md` keeps only `@AGENTS.md` and the Compact
+  Instructions.
+- **VERIFY forbids weakening tests:** never edit or delete existing tests to
+  make Verify pass; if a test looks wrong, stop and say so. Agents in
+  ImpossibleBench (arXiv 2510.20270) cheated on 50–76% of tasks whose tests
+  contradicted the spec, mostly by editing the tests. `code-reviewer` now
+  checks for weakened or deleted assertions.
+- **New deterministic Stop gate, `.claude/hooks/verify-gate.mjs`.** It is
+  plain Node with no dependencies. It blocks a done/finished/complete claim
+  when files were edited and no passing check (a Bash run that exited 0)
+  came after the last edit. Text the user typed never counts as proof. It
+  runs before the existing prompt hook, which still covers log dumps and
+  secrets.
+- **Deny rules close documented gaps:** `.env*` in subdirectories,
+  `rm -fr`, `git push … --force*` / `-f` / `+refspec`. `git clean` now asks
+  first.
+- **The `AGENTS.md` header no longer says HTML comments cost tokens.**
+  Claude Code strips them; other agents may not.
+
+### CLI
+
+- **`--sandbox`** adds an OS-level Bash sandbox (`denyRead` for `~/.ssh`,
+  `~/.aws`, `.env*`, strict mode, `failIfUnavailable`) to
+  `.claude/settings.json`.
+- **`--ci`** writes `.github/workflows/verify.yml`.
+- Both skip anything that already exists.
+
+### Bench
+
+- **New case `TEST1`:** the spec contradicts a QA-owned test. It has offline
+  golden fixtures only and has not had a live run yet.
+- **`npm run bench` also tests the Stop gate** against 9 synthetic
+  transcripts.
+- **The token count expands `@path` imports**, so moving rules into
+  `AGENTS.md` doesn't hide them from the count.
+- **The `stophook` arm uses the template gate.** `fixtures/hooks/verify-gate.sh`
+  is removed; it matched `exit 0` anywhere in the transcript, user text
+  included.
+- **`bench/run.mjs --max-budget USD`** passes `--max-budget-usd` to each run.
+  The runner also carries a note: if `--bare` becomes the `-p` default, pin
+  the opt-out.
+
 ## 0.8.0 — 2026-10-03
 
 ### Template
