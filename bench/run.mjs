@@ -57,6 +57,10 @@ function runOne(caseDef, variant, model, dryRun, runIndex = 0, budget = null) {
   const app = join(dir, 'app');
   try {
     buildVariant(app, variant, { notesFile: caseDef.notes });
+    // Per-case planted files (e.g. a test that contradicts the code).
+    for (const [rel, content] of Object.entries(caseDef.files || {})) {
+      writeFileSync(join(app, rel), content);
+    }
 
     const baselineHashes = {};
     for (const a of caseDef.asserts || []) {

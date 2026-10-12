@@ -25,8 +25,9 @@ IDEA → PLAN (strongest model) → BUILD (loop per feature)
    tracks the framework's current conventions; asking the agent to
    hand-write the same boilerplate from memory means shipping whatever its
    training data happened to freeze on.
-3. `npx leanharness`, then fill in the three placeholder sections in
-   `AGENTS.md` (Commands, Architecture, Conventions). Placeholders left
+3. `npx leanharness`, then fill in the placeholders in `AGENTS.md`: the
+   three sections (Commands, Architecture, Conventions) and the
+   `<off-limits path>` in Non-negotiable SCOPE. Placeholders left
    unfilled = an agent guessing your test runner forever.
 4. Optional but recommended: `npx leanharness --sandbox` or `/sandbox`
    (fewer permission prompts, OS-level boundaries), `--ci` to run Verify on
@@ -78,7 +79,9 @@ Default model: **Sonnet**. Per feature:
    ```
 
 2. The agent implements, runs the Verify command (`AGENTS.md` → Commands),
-   and shows real output — the `verify-done` skill enforces this.
+   and shows real output — the `verify-done` skill asks for this, and the
+   Stop hook (`.claude/hooks/verify-gate.mjs`) blocks a "done" claim when
+   no passing command ran after the last edit.
 3. Review the diff. Commit. `/clear`. Next feature.
 
 Delegation while building — this is where the harness earns its keep:

@@ -31,6 +31,17 @@ the field repo below: 0.
 Applying them without re-running `npm run bench:run` would leave the README's
 pass/fail table describing a configuration that no longer ships.
 
+**Status as of v0.9.0** (the table above is the 2026-09-30 report, kept as
+recorded; paths and line numbers refer to v0.7.0):
+
+- **#2, #3, #4:** applied in 0.8.0. The agents state read-only plainly and
+  describe response length by purpose. The live bench has not been re-run
+  since, so the concern above still stands.
+- **#1:** the SCOPE placeholder now lives in `template/AGENTS.md`.
+- **#5:** still open.
+- **#6:** resolved in 0.9.0 by reversing the import: `AGENTS.md` is the rule
+  file and `CLAUDE.md` imports it.
+
 **Kept on purpose** (the audit's keep list): the Non-negotiables' `Never`
 lines and the `~15 summary lines` log cap - each guards a failure the bench
 reproduced; and `verify-done`'s `REQUIRED` description - routing text that
