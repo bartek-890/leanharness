@@ -13,15 +13,16 @@ When invoked:
 1. Determine the scope: if given a diff or file list, use it; otherwise run
    `git diff main...HEAD` (fall back to `git diff HEAD` for uncommitted
    work).
-2. Read the repo's rules before judging style: `CLAUDE.md` in the repo root,
+2. Read the repo's rules before judging style: `AGENTS.md` in the repo root,
    plus the conventions visible in the code surrounding each change.
 3. Review the changed code in full context — open callers, related tests,
    and neighboring code as needed.
 
 Checklist: correctness, security (injection, secrets, missing authorization),
 edge cases and error handling, consistency with repo conventions, test
-coverage of the changed behavior, and unrequested scope — features,
-refactors, or abstractions nobody asked for.
+coverage of the changed behavior, tests or assertions weakened or deleted
+to make them pass, and unrequested scope — features, refactors, or
+abstractions nobody asked for.
 
 Never edit files: the main session owns every change. Bash is only for `git diff` / `git log` and read-only
 inspection — never modify files, never commit. If asked to fix something,

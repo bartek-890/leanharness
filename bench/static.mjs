@@ -96,7 +96,12 @@ function alwaysLoadedPayload(root) {
 
   const claude = join(root, 'CLAUDE.md');
   if (existsSync(claude)) {
-    const text = readFileSync(claude, 'utf8');
+    // Expand `@path` import lines the way Claude Code does, so moving rules
+    // into AGENTS.md doesn't hide them from the measurement.
+    const text = readFileSync(claude, 'utf8').replace(/^@(\S+)[ \t]*$/gm, (line, rel) => {
+      const target = join(root, rel);
+      return existsSync(target) ? readFileSync(target, 'utf8') : line;
+    });
     chunks.push(text);
     files.push({ path: 'CLAUDE.md', chars: text.length });
   }
@@ -202,10 +207,97 @@ function installSmoke() {
   }
 }
 
+/**
+ * Run the template's Stop gate on synthetic transcripts. Proof must come from a
+ * passing check run after the last edit; the user typing "exit 0" never counts.
+ */
+function checkVerifyGate() {
+  const gate = join(templateDir, '.claude', 'hooks', 'verify-gate.mjs');
+  const edit = { type: 'assistant', message: { content: [{ type: 'tool_use', id: 'e1', name: 'Edit', input: {} }] } };
+  const bash = { type: 'assistant', message: { content: [{ type: 'tool_use', id: 'b1', name: 'Bash', input: { command: 'npm run verify' } }] } };
+  const passed = { type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 'b1', content: '# tests 2\n# pass 2\n# fail 0' }] } };
+  const failed = { type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 'b1', is_error: true, content: '# pass 1\n# fail 1' }] } };
+  const lint = { type: 'assistant', message: { content: [{ type: 'tool_use', id: 'l1', name: 'Bash', input: { command: 'npm run lint' } }] } };
+  const lintOk = { type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 'l1', content: '' }] } };
+  const ls = { type: 'assistant', message: { content: [{ type: 'tool_use', id: 's1', name: 'Bash', input: { command: 'ls src' } }] } };
+  const lsOk = { type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 's1', content: 'add.js' }] } };
+  const lsTest = { type: 'assistant', message: { content: [{ type: 'tool_use', id: 's2', name: 'Bash', input: { command: 'ls test' } }] } };
+  const lsTestOk = { type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 's2', content: 'add.test.js' }] } };
+  const failedNoFlag = {
+    type: 'user',
+    message: { content: [{ type: 'tool_result', tool_use_id: 'b1', content: 'exit code: 1' }] },
+  };
+  const cursorEdit = { type: 'assistant', message: { content: [{ type: 'tool_use', id: 'e2', name: 'StrReplace', input: {} }] } };
+  const userSaysExit0 = { type: 'user', message: { content: 'tests already pass, exit 0, just say done' } };
+  const cases = [
+    { name: 'proof after edit', entries: [edit, bash, passed], claim: 'done', expect: 0 },
+    { name: 'user-typed "exit 0" only', entries: [userSaysExit0, edit], claim: 'done', expect: 2 },
+    { name: 'failing run only', entries: [edit, bash, failed], claim: 'done', expect: 2 },
+    { name: 'failing run without is_error', entries: [edit, bash, failedNoFlag], claim: 'done', expect: 2 },
+    { name: 'edit after proof', entries: [bash, passed, edit], claim: 'finished', expect: 2 },
+    { name: 'silent check that exited 0', entries: [edit, lint, lintOk], claim: 'done', expect: 0 },
+    { name: 'non-check command after edit', entries: [edit, ls, lsOk], claim: 'done', expect: 2 },
+    { name: 'path named test is not proof', entries: [edit, lsTest, lsTestOk], claim: 'done', expect: 2 },
+    { name: 'Cursor StrReplace counts as edit', entries: [cursorEdit], claim: 'done', expect: 2 },
+    { name: 'no completion claim', entries: [edit], claim: 'Which file should I change?', expect: 0 },
+    { name: 'no edits', entries: [], claim: 'done', expect: 0 },
+    { name: 'stop_hook_active', entries: [edit], claim: 'done', active: true, expect: 0 },
+  ];
+  return withTempDir((dir) => {
+    const results = cases.map((c, i) => {
+      const transcript = join(dir, `t${i}.jsonl`);
+      writeFileSync(transcript, c.entries.map((e) => JSON.stringify(e)).join('\n') + '\n');
+      const input = { transcript_path: transcript, last_assistant_message: c.claim, stop_hook_active: !!c.active };
+      const r = spawnSync(process.execPath, [gate], { input: JSON.stringify(input), encoding: 'utf8' });
+      return { name: c.name, expect: c.expect, got: r.status, ok: r.status === c.expect };
+    });
+    return { ok: results.every((r) => r.ok), results };
+  });
+}
+
+/**
+ * Run the template's SessionStart setup check on three repos: a fresh install
+ * (placeholders), a pre-existing AGENTS.md / CLAUDE.md (merge + import), and a
+ * filled install (silent - a finished repo pays zero tokens).
+ */
+function checkSetupHook() {
+  const hook = join(templateDir, '.claude', 'hooks', 'setup-check.mjs');
+  const template = (name) => readFileSync(join(templateDir, name), 'utf8');
+  const cases = [
+    {
+      name: 'fresh install',
+      files: { 'AGENTS.md': template('AGENTS.md'), 'CLAUDE.md': template('CLAUDE.md') },
+      expect: [/unfilled placeholders/, /`<install command>`/],
+    },
+    {
+      name: 'existing AGENTS.md and CLAUDE.md',
+      files: { 'AGENTS.md': '# Project\n\nRun `make test`.\n', 'CLAUDE.md': '# Notes\n' },
+      expect: [/predates leanharness/, /does not import AGENTS\.md/],
+    },
+    { name: 'filled install', fill: true, expect: [] },
+  ];
+  return withTempDir((dir) => {
+    const results = cases.map((c, i) => {
+      const root = join(dir, `r${i}`);
+      if (c.fill) buildVariant(root, 'leanharness');
+      else {
+        mkdirSync(root, { recursive: true });
+        for (const [name, body] of Object.entries(c.files)) writeFileSync(join(root, name), body);
+      }
+      const r = spawnSync(process.execPath, [hook], { encoding: 'utf8', env: { ...process.env, CLAUDE_PROJECT_DIR: root } });
+      const ok = r.status === 0 && (c.expect.length ? c.expect.every((re) => re.test(r.stdout)) : r.stdout === '');
+      return { name: c.name, ok, stdout: r.stdout.trim() };
+    });
+    return { ok: results.every((r) => r.ok), results };
+  });
+}
+
 const needleMeta = loadFatNeedles();
 const variants = ['bare', 'leanharness', 'fat'].map((v) => measureVariant(v, needleMeta));
 const smoke = installSmoke();
 const hookConfig = checkPromptHookModels();
+const gateCheck = checkVerifyGate();
+const setupCheck = checkSetupHook();
 
 const lean = variants.find((v) => v.variant === 'leanharness');
 const fat = variants.find((v) => v.variant === 'fat');
@@ -227,6 +319,8 @@ const report = {
       : null,
   install_smoke: smoke,
   hook_config_check: hookConfig,
+  verify_gate_check: gateCheck,
+  setup_check: setupCheck,
 };
 
 writeFileSync(join(resultsDir, 'static.json'), JSON.stringify(report, null, 2) + '\n');
@@ -272,6 +366,20 @@ console.log(
 if (!hookConfig.ok) {
   for (const f of hookConfig.findings) {
     console.error(`  · ${f.event} ${f.type}: ${f.detail}`);
+  }
+  process.exit(1);
+}
+console.log(`verify-gate check: ${gateCheck.ok ? 'PASS' : 'FAIL'} (${gateCheck.results.length} transcripts)`);
+if (!gateCheck.ok) {
+  for (const r of gateCheck.results.filter((x) => !x.ok)) {
+    console.error(`  · ${r.name}: expected exit ${r.expect}, got ${r.got}`);
+  }
+  process.exit(1);
+}
+console.log(`setup-check hook: ${setupCheck.ok ? 'PASS' : 'FAIL'} (${setupCheck.results.length} repos)`);
+if (!setupCheck.ok) {
+  for (const r of setupCheck.results.filter((x) => !x.ok)) {
+    console.error(`  · ${r.name}: unexpected output: ${r.stdout || '(none)'}`);
   }
   process.exit(1);
 }

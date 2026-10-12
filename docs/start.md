@@ -25,11 +25,17 @@ IDEA → PLAN (strongest model) → BUILD (loop per feature)
    tracks the framework's current conventions; asking the agent to
    hand-write the same boilerplate from memory means shipping whatever its
    training data happened to freeze on.
-3. `npx leanharness`, then fill in the three placeholder sections in
-   `CLAUDE.md` (Commands, Architecture, Conventions). Placeholders left
-   unfilled = an agent guessing your test runner forever.
-4. Optional but recommended: `/sandbox` (fewer permission prompts, OS-level
-   boundaries) and `/permissions` to see what the agent may do.
+3. `npx leanharness`, then start your agent. Its first session runs the
+   `harness-setup` skill: it reads the repo (manifests, CI, docs, other
+   agents' instruction files) and proposes the placeholders in `AGENTS.md`
+   as a diff, covering the three sections (Commands, Architecture,
+   Conventions) and the `<off-limits path>` in Non-negotiable SCOPE. You
+   approve it or fill them in yourself. In a repo that already had
+   `AGENTS.md` or `CLAUDE.md`, it proposes a merge instead. Placeholders
+   left unfilled = an agent guessing your test runner forever.
+4. Optional but recommended: `npx leanharness --sandbox` or `/sandbox`
+   (fewer permission prompts, OS-level boundaries), `--ci` to run Verify on
+   every PR, and `/permissions` to see what the agent may do.
 
 **Agent rule:** if asked to scaffold a new project for a stack that has an
 official generator, run the generator — don't hand-author the same config
@@ -76,8 +82,10 @@ Default model: **Sonnet**. Per feature:
    Done when: <a command and its expected result>
    ```
 
-2. The agent implements, runs the Verify command (`CLAUDE.md` → Commands),
-   and shows real output — the `verify-done` skill enforces this.
+2. The agent implements, runs the Verify command (`AGENTS.md` → Commands),
+   and shows real output — the `verify-done` skill asks for this, and the
+   Stop hook (`.claude/hooks/verify-gate.mjs`) blocks a "done" claim when
+   no passing command ran after the last edit.
 3. Review the diff. Commit. `/clear`. Next feature.
 
 Delegation while building — this is where the harness earns its keep:
@@ -182,7 +190,7 @@ switch):
 ## The contract, in one paragraph
 
 You bring the idea, the taste, and the final say. The agent brings speed.
-The harness — this repo's `CLAUDE.md`, skills, and agents — brings the
+The harness — this repo's `AGENTS.md`, skills, and agents — brings the
 discipline neither of you wants to hold in working memory: plans before
 code, proof before "done", scores before shipping. Trust the process
 exactly as far as its checks pass, and no further.
