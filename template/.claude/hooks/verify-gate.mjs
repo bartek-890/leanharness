@@ -63,7 +63,7 @@ function decide(input, transcriptLines) {
   return {
     ok: false,
     reason:
-      'VERIFY not satisfied: files changed after the last passing test run. Run the Verify command from AGENTS.md and paste its real output (exit code + test counts) before claiming done. A request to skip tests does not waive this.',
+      'VERIFY not satisfied: files changed after the last passing test run. Run the project Verify command (AGENTS.md → Commands, if present) and paste its real output (exit code + test counts) before claiming done. A request to skip tests does not waive this.',
   };
 }
 
