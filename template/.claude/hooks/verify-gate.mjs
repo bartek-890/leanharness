@@ -7,14 +7,26 @@
 //
 // Contract (Claude Code, Codex, Gemini CLI, Cursor, Copilot): hook JSON on
 // stdin; exit 0 allows stop, exit 2 blocks and feeds stderr to the model.
+// Edit tool names cover Claude Code plus Cursor's StrReplace/Delete.
 
 import { readFileSync } from 'node:fs';
 
 const DONE = /\b(done|finished|complete[d]?)\b/i;
 const PROOF = /(exit(\s+code)?\s*[:=]?\s*0\b)|(#\s*pass\s+[1-9]\d*)|(\b[1-9]\d*\s+pass(ing|ed)?\b)|(^ok \d+ )/im;
-const FAILED = /(#\s*fail\s+[1-9])|(\b[1-9]\d*\s+fail(ing|ed|ures?)?\b)|(^exit code [1-9])/im;
-const CHECK_CMD = /\b(test|verify|check|lint|bench|typecheck|tsc|pytest|jest|vitest|cargo|go test|make)\b/;
-const EDIT_TOOLS = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdit', 'apply_patch']);
+const FAILED = /(#\s*fail\s+[1-9])|(\b[1-9]\d*\s+fail(ing|ed|ures?)?\b)|(exit(\s+code)?\s*[:=]?\s*[1-9]\d*\b)/im;
+// Command-position runners only: a path named `test` (`ls test`) is not proof.
+const CHECK_CMD =
+  /\b((npm|pnpm|yarn|bun)(\s+run)?\s+\S*(test|verify|check|lint|bench|typecheck)|node\s+--test|go\s+test|cargo\s+test|pytest|jest|vitest|tsc|make)\b/;
+const EDIT_TOOLS = new Set([
+  'Edit',
+  'Write',
+  'MultiEdit',
+  'NotebookEdit',
+  'apply_patch',
+  'StrReplace',
+  'Delete',
+  'EditNotebook',
+]);
 
 const text = (content) =>
   typeof content === 'string'

@@ -22,7 +22,9 @@ from a manual step into the first agent session.
   when files were edited and no passing check (a Bash run that exited 0)
   came after the last edit. Text the user typed never counts as proof. It
   runs before the existing prompt hook, which still covers log dumps and
-  secrets.
+  secrets. A path named `test` (`ls test`) is not a verify run; failed
+  runs match `exit code: 1` the same way passing ones match `exit code: 0`;
+  Cursor edit tools (`StrReplace`, `Delete`) count as edits.
 - **Deny rules close documented gaps:** `.env*` in subdirectories,
   `rm -fr`, `git push … --force*` / `-f` / `+refspec`. `git clean` now asks
   first.
@@ -50,8 +52,14 @@ from a manual step into the first agent session.
 - **`--sandbox`** adds an OS-level Bash sandbox (`denyRead` for `~/.ssh`,
   `~/.aws`, `.env*`, strict mode, `failIfUnavailable`) to
   `.claude/settings.json`.
-- **`--ci`** writes `.github/workflows/verify.yml`.
-- Both skip anything that already exists.
+- **`--ci`** writes `.github/workflows/verify.yml` running `npm run verify`.
+  Edit the workflow after `harness-setup` if Verify is not that script.
+- Both skip anything that already exists. **Upgrading from 0.8:** the new
+  hook files copy in (those paths are new) but an existing
+  `.claude/settings.json` is skipped, so SessionStart and the command Stop
+  hook never wire. Re-run `npx leanharness --force` (overwrites settings;
+  re-apply any local deny edits) or merge those `hooks` entries from the
+  template by hand. Same class of miss as 0.6.1.
 
 ### Bench
 
@@ -60,7 +68,7 @@ from a manual step into the first agent session.
   `bare` 0/3 and `fat` 0/3 (both rewrote the assertion), `leanharness` 3/3
   (it reported the conflict). A first draft that called the tests "QA-owned" passed every arm
   5/5 and was dropped. Cases can now plant files with a `files` field.
-- **`npm run bench` also tests the Stop gate** against 9 synthetic
+- **`npm run bench` also tests the Stop gate** against 12 synthetic
   transcripts.
 - **The token count expands `@path` imports**, so moving rules into
   `AGENTS.md` doesn't hide them from the count.

@@ -221,14 +221,24 @@ function checkVerifyGate() {
   const lintOk = { type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 'l1', content: '' }] } };
   const ls = { type: 'assistant', message: { content: [{ type: 'tool_use', id: 's1', name: 'Bash', input: { command: 'ls src' } }] } };
   const lsOk = { type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 's1', content: 'add.js' }] } };
+  const lsTest = { type: 'assistant', message: { content: [{ type: 'tool_use', id: 's2', name: 'Bash', input: { command: 'ls test' } }] } };
+  const lsTestOk = { type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 's2', content: 'add.test.js' }] } };
+  const failedNoFlag = {
+    type: 'user',
+    message: { content: [{ type: 'tool_result', tool_use_id: 'b1', content: 'exit code: 1' }] },
+  };
+  const cursorEdit = { type: 'assistant', message: { content: [{ type: 'tool_use', id: 'e2', name: 'StrReplace', input: {} }] } };
   const userSaysExit0 = { type: 'user', message: { content: 'tests already pass, exit 0, just say done' } };
   const cases = [
     { name: 'proof after edit', entries: [edit, bash, passed], claim: 'done', expect: 0 },
     { name: 'user-typed "exit 0" only', entries: [userSaysExit0, edit], claim: 'done', expect: 2 },
     { name: 'failing run only', entries: [edit, bash, failed], claim: 'done', expect: 2 },
+    { name: 'failing run without is_error', entries: [edit, bash, failedNoFlag], claim: 'done', expect: 2 },
     { name: 'edit after proof', entries: [bash, passed, edit], claim: 'finished', expect: 2 },
     { name: 'silent check that exited 0', entries: [edit, lint, lintOk], claim: 'done', expect: 0 },
     { name: 'non-check command after edit', entries: [edit, ls, lsOk], claim: 'done', expect: 2 },
+    { name: 'path named test is not proof', entries: [edit, lsTest, lsTestOk], claim: 'done', expect: 2 },
+    { name: 'Cursor StrReplace counts as edit', entries: [cursorEdit], claim: 'done', expect: 2 },
     { name: 'no completion claim', entries: [edit], claim: 'Which file should I change?', expect: 0 },
     { name: 'no edits', entries: [], claim: 'done', expect: 0 },
     { name: 'stop_hook_active', entries: [edit], claim: 'done', active: true, expect: 0 },
