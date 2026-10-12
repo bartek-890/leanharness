@@ -245,11 +245,49 @@ function checkVerifyGate() {
   });
 }
 
+/**
+ * Run the template's SessionStart setup check on three repos: a fresh install
+ * (placeholders), a pre-existing AGENTS.md / CLAUDE.md (merge + import), and a
+ * filled install (silent - a finished repo pays zero tokens).
+ */
+function checkSetupHook() {
+  const hook = join(templateDir, '.claude', 'hooks', 'setup-check.mjs');
+  const template = (name) => readFileSync(join(templateDir, name), 'utf8');
+  const cases = [
+    {
+      name: 'fresh install',
+      files: { 'AGENTS.md': template('AGENTS.md'), 'CLAUDE.md': template('CLAUDE.md') },
+      expect: [/unfilled placeholders/, /`<install command>`/],
+    },
+    {
+      name: 'existing AGENTS.md and CLAUDE.md',
+      files: { 'AGENTS.md': '# Project\n\nRun `make test`.\n', 'CLAUDE.md': '# Notes\n' },
+      expect: [/predates leanharness/, /does not import AGENTS\.md/],
+    },
+    { name: 'filled install', fill: true, expect: [] },
+  ];
+  return withTempDir((dir) => {
+    const results = cases.map((c, i) => {
+      const root = join(dir, `r${i}`);
+      if (c.fill) buildVariant(root, 'leanharness');
+      else {
+        mkdirSync(root, { recursive: true });
+        for (const [name, body] of Object.entries(c.files)) writeFileSync(join(root, name), body);
+      }
+      const r = spawnSync(process.execPath, [hook], { encoding: 'utf8', env: { ...process.env, CLAUDE_PROJECT_DIR: root } });
+      const ok = r.status === 0 && (c.expect.length ? c.expect.every((re) => re.test(r.stdout)) : r.stdout === '');
+      return { name: c.name, ok, stdout: r.stdout.trim() };
+    });
+    return { ok: results.every((r) => r.ok), results };
+  });
+}
+
 const needleMeta = loadFatNeedles();
 const variants = ['bare', 'leanharness', 'fat'].map((v) => measureVariant(v, needleMeta));
 const smoke = installSmoke();
 const hookConfig = checkPromptHookModels();
 const gateCheck = checkVerifyGate();
+const setupCheck = checkSetupHook();
 
 const lean = variants.find((v) => v.variant === 'leanharness');
 const fat = variants.find((v) => v.variant === 'fat');
@@ -272,6 +310,7 @@ const report = {
   install_smoke: smoke,
   hook_config_check: hookConfig,
   verify_gate_check: gateCheck,
+  setup_check: setupCheck,
 };
 
 writeFileSync(join(resultsDir, 'static.json'), JSON.stringify(report, null, 2) + '\n');
@@ -324,6 +363,13 @@ console.log(`verify-gate check: ${gateCheck.ok ? 'PASS' : 'FAIL'} (${gateCheck.r
 if (!gateCheck.ok) {
   for (const r of gateCheck.results.filter((x) => !x.ok)) {
     console.error(`  · ${r.name}: expected exit ${r.expect}, got ${r.got}`);
+  }
+  process.exit(1);
+}
+console.log(`setup-check hook: ${setupCheck.ok ? 'PASS' : 'FAIL'} (${setupCheck.results.length} repos)`);
+if (!setupCheck.ok) {
+  for (const r of setupCheck.results.filter((x) => !x.ok)) {
+    console.error(`  · ${r.name}: unexpected output: ${r.stdout || '(none)'}`);
   }
   process.exit(1);
 }

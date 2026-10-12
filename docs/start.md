@@ -25,10 +25,14 @@ IDEA → PLAN (strongest model) → BUILD (loop per feature)
    tracks the framework's current conventions; asking the agent to
    hand-write the same boilerplate from memory means shipping whatever its
    training data happened to freeze on.
-3. `npx leanharness`, then fill in the placeholders in `AGENTS.md`: the
-   three sections (Commands, Architecture, Conventions) and the
-   `<off-limits path>` in Non-negotiable SCOPE. Placeholders left
-   unfilled = an agent guessing your test runner forever.
+3. `npx leanharness`, then start your agent. Its first session runs the
+   `harness-setup` skill: it reads the repo (manifests, CI, docs, other
+   agents' instruction files) and proposes the placeholders in `AGENTS.md`
+   as a diff, covering the three sections (Commands, Architecture,
+   Conventions) and the `<off-limits path>` in Non-negotiable SCOPE. You
+   approve it or fill them in yourself. In a repo that already had
+   `AGENTS.md` or `CLAUDE.md`, it proposes a merge instead. Placeholders
+   left unfilled = an agent guessing your test runner forever.
 4. Optional but recommended: `npx leanharness --sandbox` or `/sandbox`
    (fewer permission prompts, OS-level boundaries), `--ci` to run Verify on
    every PR, and `/permissions` to see what the agent may do.

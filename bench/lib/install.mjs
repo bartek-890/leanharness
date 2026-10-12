@@ -60,6 +60,8 @@ export function installLeanHarness(dest) {
   if (existsSync(agentsPath)) {
     let text = readFileSync(agentsPath, 'utf8');
     text = text
+      // A filled AGENTS.md has no setup step left, as after harness-setup.
+      .replace(/## Setup pending\n[\s\S]*?\n(?=## )/, '')
       .replace('`<install command>`', '`npm install`')
       .replace('`<dev command>`', '`npm test`')
       .replace(

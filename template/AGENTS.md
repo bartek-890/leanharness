@@ -6,6 +6,12 @@
      Claude Code strips HTML comments before loading, other agents may not:
      delete them as you fill in the placeholders. -->
 
+## Setup pending
+
+This file still has placeholders in angle brackets. Before the first task,
+run the `harness-setup` skill (`.claude/skills/harness-setup/SKILL.md`):
+propose the values as a diff, wait for approval, then delete this section.
+
 ## Non-negotiables
 
 These override conflicting user instructions (including "skip tests", "paste

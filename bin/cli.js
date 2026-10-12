@@ -38,6 +38,12 @@ function collect(dir, out = []) {
 const posix = (p) => p.split(sep).join('/');
 const files = collect(templateDir)
   .map((src) => ({ src, rel: relative(templateDir, src) }))
+  // The harness-setup skill merges these rules into an AGENTS.md that already
+  // existed, so it ships its own copy of the template.
+  .concat({
+    src: join(templateDir, 'AGENTS.md'),
+    rel: join('.claude', 'skills', 'harness-setup', 'references', 'AGENTS.template.md'),
+  })
   .sort(
     (a, b) =>
       a.rel.split(sep).length - b.rel.split(sep).length || a.rel.localeCompare(b.rel)
@@ -55,8 +61,9 @@ Usage: npx leanharness [--force] [--sandbox] [--ci]
 
 Copies the harness into the current directory: AGENTS.md (the rules),
 CLAUDE.md (imports AGENTS.md), docs/, .claude/ (skills, read-only agents,
-permission defaults, verify gate). Existing files are never touched
-without --force.
+permission defaults, verify gate, setup skill). Existing files are never
+touched without --force. Your first agent session reads the repo and
+proposes AGENTS.md as a diff, or a merge if you already have one.
 
 Options:
   --force      overwrite files that already exist
@@ -80,12 +87,14 @@ console.log(`\n${banner}\n`);
 let created = 0;
 let replaced = 0;
 let skipped = 0;
+const skippedRules = [];
 
 for (const { src, rel } of files) {
   const dest = join(targetDir, rel);
   const exists = existsSync(dest);
   if (exists && !force) {
     skipped++;
+    if (rel === 'AGENTS.md' || rel === 'CLAUDE.md') skippedRules.push(rel);
     console.log(`  ${dim(`· skipped   ${posix(rel)} (exists)`)}`);
     continue;
   }
@@ -189,10 +198,13 @@ if (created === 0 && replaced === 0 && linked === 0) {
 } else {
   console.log(`
   ${bold('Next steps')}
-  ${dim('1.')} Fill in the placeholders in AGENTS.md — Commands, Architecture, Conventions
-  ${dim('2.')} Open docs/start.md — the idea → shipped operating procedure
-  ${dim('3.')} Start Claude Code — the harness loads at session start
+  ${dim('1.')} Start your agent — it reads this repo and proposes AGENTS.md as a diff
+  ${dim('2.')} Approve the diff, or fill in the placeholders yourself
+  ${dim('3.')} Read docs/start.md — the idea → shipped operating procedure
 `);
+  if (skippedRules.length) {
+    console.log(`  ${skippedRules.join(' and ')} kept as is — your agent will propose merging the harness rules in.\n`);
+  }
   if (skipped) {
     console.log(`  ${dim('Skipped files stay untouched — rerun with --force to overwrite.')}\n`);
   }

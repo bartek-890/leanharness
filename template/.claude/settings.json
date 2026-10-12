@@ -23,6 +23,17 @@
     ]
   },
   "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/setup-check.mjs\""
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [

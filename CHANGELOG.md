@@ -2,7 +2,8 @@
 
 ## 0.9.0 — 2026-10-12
 
-Rules move from prose the model may skip into checks it can't.
+Rules move from prose the model may skip into checks it can't. Setup moves
+from a manual step into the first agent session.
 
 ### Template
 
@@ -27,6 +28,22 @@ Rules move from prose the model may skip into checks it can't.
   first.
 - **The `AGENTS.md` header no longer says HTML comments cost tokens.**
   Claude Code strips them; other agents may not.
+- **The first agent session sets up the harness.** A new `harness-setup`
+  skill reads the repo (manifests, CI, docs, other agents' instruction
+  files) and proposes the `AGENTS.md` values as a diff with the source of
+  each one. Nothing is written until the user approves. `AGENTS.md` carries
+  a short `Setup pending` section that points every agent at it and is
+  deleted once setup is done.
+- **Installing into an existing repo no longer drops the rules.** The CLI
+  skipped an existing `AGENTS.md`, so the Non-negotiables never landed, and
+  an existing `CLAUDE.md` without `@AGENTS.md` hid the new file from Claude
+  Code. The CLI now ships the template to
+  `.claude/skills/harness-setup/references/AGENTS.template.md`, and the skill
+  proposes a merge from it.
+- **New SessionStart hook, `.claude/hooks/setup-check.mjs`.** Plain Node,
+  no dependencies. It reports unfilled placeholders, an `AGENTS.md` without
+  Non-negotiables, or a `CLAUDE.md` that doesn't import `AGENTS.md`, and
+  prints nothing once setup is complete.
 
 ### CLI
 
@@ -53,6 +70,11 @@ Rules move from prose the model may skip into checks it can't.
 - **`bench/run.mjs --max-budget USD`** passes `--max-budget-usd` to each run.
   The runner also carries a note: if `--bare` becomes the `-p` default, pin
   the opt-out.
+- **The live results in this release predate `harness-setup`.** The
+  bench fills the placeholders and strips the `Setup pending` section like a
+  finished setup would, and `setup-check.mjs` stays silent on a filled
+  install. The only difference in the measured install is one more skill
+  description (about 78 tokens always loaded).
 
 ## 0.8.0 — 2026-10-03
 

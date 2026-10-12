@@ -1,6 +1,6 @@
 # leanharness
 
-> Eleven files. One `npx`. A Claude Code harness that fits in the context budget.
+> One `npx`, then your agent sets itself up. A Claude Code harness that fits in the context budget.
 
 [![npm version](https://img.shields.io/npm/v/leanharness)](https://www.npmjs.com/package/leanharness)
 [![node](https://img.shields.io/node/v/leanharness)](https://github.com/bartek-890/leanharness/blob/main/package.json)
@@ -23,11 +23,17 @@ deny rules, a deterministic Stop gate that refuses "done" without verify proof,
 and a short skill/agent kit. Each
 piece maps to a rule on [bartlomiejkrupa.dev](https://bartlomiejkrupa.dev).
 
+You don't fill in a template by hand. The first agent session reads your repo
+(manifests, CI, docs, the instruction files you already have) and proposes the
+project-specific parts — Verify command, off-limits paths, architecture — as a
+diff. Each value cites the file it came from, and nothing is written until
+you approve.
+
 ## Does it work?
 
 **Short version:** with no harness the agent failed 3 of 4 hard prompts. With
 leanharness it passed all 4. A bloated ~300-line `CLAUDE.md` passed 3 of 4
-(and cost ~2.4× more always-loaded tokens than lean).
+(and cost ~1.9× more always-loaded tokens than lean).
 
 Full measured write-up:
 [A 129-rule CLAUDE.md replied like an empty one](https://bartlomiejkrupa.dev/articles/claude-md-adherence-bench)
@@ -94,8 +100,8 @@ only boundary that fully holds is credentials that do not reach production.
 you cannot observe firing is not evidence it works — DEL1 above is the case that
 meets that bar.
 
-Context cost of what loads every session (approx tokens): **lean ~1.3k**,
-**fat ~3.3k** (clears Sonnet 5's 1,024-token [prompt cache floor](https://bartlomiejkrupa.dev/articles/prompt-cache-floors-by-model) on the main model).
+Context cost of what loads every session (approx tokens, `npm run bench`):
+**lean ~1.7k**, **fat ~3.3k** (clears Sonnet 5's 1,024-token [prompt cache floor](https://bartlomiejkrupa.dev/articles/prompt-cache-floors-by-model) on the main model).
 Bare is ~0 because it ships no rules — and that's why it fails the hard cases.
 
 Reproduce: `npm run bench:run` (see [Benchmark](#benchmark)).
@@ -118,7 +124,7 @@ npx leanharness
 ```
 
 ```text
-leanharness v0.9.0 — a lean Claude Code harness in 11 files
+leanharness v0.9.0 — a lean Claude Code harness in 14 files
 
   + created   AGENTS.md
   + created   CLAUDE.md
@@ -128,18 +134,35 @@ leanharness v0.9.0 — a lean Claude Code harness in 11 files
   + created   .claude/agents/code-reviewer.md
   + created   .claude/agents/explorer.md
   + created   .claude/agents/researcher.md
+  + created   .claude/hooks/setup-check.mjs
   + created   .claude/hooks/verify-gate.mjs
+  + created   .claude/skills/harness-setup/SKILL.md
   + created   .claude/skills/security-audit/SKILL.md
   + created   .claude/skills/verify-done/SKILL.md
+  + created   .claude/skills/harness-setup/references/AGENTS.template.md
   + linked    .agents → .claude
   + linked    .cursor → .claude
 
-  11 created · 2 linked
+  14 created · 2 linked
 ```
 
-Existing files stay put unless you pass `--force`. Open `AGENTS.md`, fill
-Commands / Architecture / Conventions, delete the HTML comments (Claude Code
-strips them, other agents don't). About two minutes.
+Then start your agent. You don't need a special prompt:
+
+- **New repo:** `harness-setup` reads `package.json` scripts, CI workflows,
+  the README and lockfiles, runs the Verify candidate once to prove it
+  passes, and proposes Commands / Architecture / Conventions plus the
+  off-limits path as one diff. Anything the repo can't answer stays a
+  placeholder with a question attached.
+- **Existing repo:** your `AGENTS.md` and `CLAUDE.md` are never overwritten.
+  The agent proposes a merge instead: your content stays, the
+  Non-negotiables come in, and `CLAUDE.md` gets the `@AGENTS.md` import.
+- **Empty repo:** it stops and points you at your stack's official
+  scaffolder first. There's nothing to read yet.
+
+`setup-check.mjs` reports what's still missing at the start of each session
+and goes quiet once setup is done, so a configured repo pays zero tokens for
+it. Prefer to do it by hand? Fill the placeholders, then delete the
+`Setup pending` section and the HTML comments.
 
 Two opt-in flags:
 
@@ -163,8 +186,9 @@ your-repo/
 ├── .claude/
 │   ├── settings.json         deny ~/.ssh ~/.aws .env* + Stop hooks
 │   ├── hooks/verify-gate.mjs deterministic VERIFY gate (no deps)
+│   ├── hooks/setup-check.mjs flags unfinished setup at session start
 │   ├── agents/               explorer · code-reviewer · researcher
-│   └── skills/               verify-done · security-audit
+│   └── skills/               verify-done · security-audit · harness-setup
 ├── .agents  → .claude
 └── .cursor  → .claude        (only if the path is free)
 ```
@@ -184,7 +208,7 @@ behind them:
 
 ## What works without you remembering
 
-Most harness tips need discipline. Three pieces don't:
+Most harness tips need discipline. Four pieces don't:
 
 1. **`settings.json`** — Claude Code has no built-in credential deny list.
    Deny closes `~/.ssh`, `~/.aws`, and `.env*` from session one. Same file
@@ -197,6 +221,9 @@ Most harness tips need discipline. Three pieces don't:
 3. **`verify-done`** — "done" needs an exit code in the transcript. "Mostly
    working" and "you said skip tests" don't count. The Stop hook backs this
    up when the skill alone gets ignored.
+4. **`setup-check.mjs`** — an install with unfilled placeholders, or one
+   whose `CLAUDE.md` never imports `AGENTS.md`, gets flagged at the start of
+   every session until it's fixed. Placeholders don't get forgotten.
 
 The Non-negotiables at the top of `AGENTS.md` are the bit the bench kept
 rewarding: named rules that override a conflicting user prompt beat a skill
@@ -215,8 +242,17 @@ The cut list *is* the product.
 
 Claude Code reads the native paths. Everyone else gets bridges:
 
-- **`AGENTS.md`** holds the rules; Codex, Cursor, Copilot, Gemini CLI and
-  OpenCode read it natively, and `CLAUDE.md` imports it with `@AGENTS.md`.
+- **`AGENTS.md`** holds the rules. Codex, Cursor, Copilot and OpenCode read
+  it natively, `CLAUDE.md` imports it with `@AGENTS.md`, and Gemini CLI
+  reads it once `.gemini/settings.json` lists it in `context.fileName`
+  (`harness-setup` proposes that when it finds a `GEMINI.md`).
+- **Setup in other tools:** the `Setup pending` section in `AGENTS.md`
+  points every agent at `harness-setup`, which follows the open Agent Skills
+  format. `setup-check.mjs` prints plain text to stdout, the SessionStart
+  contract Codex shares, so you can wire it into `.codex/hooks.json` by hand.
+  One gap: when you install into a repo with its own `AGENTS.md`, there is
+  no `Setup pending` section. Outside Claude Code, ask for the merge
+  yourself ("run harness-setup").
 - **`.agents` / `.cursor` symlinks** → same folder, zero drift. Visible ≠
   executable: subagents and `settings.json` deny rules only run in Claude
   Code. An existing real `.cursor/` is never replaced.
@@ -228,13 +264,21 @@ Claude Code reads the native paths. Everyone else gets bridges:
 
 **Safe in an existing repo?**
 Yes. Existing files are skipped; overwrite needs `--force`. No prompts, no
-postinstall, no network from the CLI.
+postinstall, no network from the CLI. A skipped `AGENTS.md` or `CLAUDE.md`
+doesn't leave you without the rules: `setup-check.mjs` flags it at session
+start, and `harness-setup` proposes a merge from the copy of the template in
+`.claude/skills/harness-setup/references/`.
+
+**Will the agent rewrite my `AGENTS.md` on its own?**
+No. `harness-setup` only proposes a diff, and its first constraint is no
+writes to `AGENTS.md` or `CLAUDE.md` before you approve. It also never reads
+`.env*` to discover settings.
 
 **Why symlink instead of copy?**
 One folder. Update `.claude`, every tool that resolves those paths sees it.
 
 **Why zero dependencies?**
-It copies eleven files. Extra deps would be someone else's supply chain in your
+It copies fourteen files. Extra deps would be someone else's supply chain in your
 dev setup.
 
 **Where do the rules come from?**
